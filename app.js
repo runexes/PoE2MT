@@ -9,6 +9,7 @@
   const REQUIRED_LOG_FILE = "Client.txt";
   const STATE_VERSION = 12;
   const DEFAULT_START_DATE = "2026-09-04";
+  const DEFAULT_LANGUAGE = "en";
 
   const DEFAULT_TEMPLATE = [
     "Simulacrum: {location_count:Simulacrum of Delusion}",
@@ -63,7 +64,8 @@
     statsPort: document.getElementById("statsPort"),
     autoStart: document.getElementById("autoStart"),
     serverStart: document.getElementById("serverStart"),
-    serverStatus: document.getElementById("serverStatus")
+    serverStatus: document.getElementById("serverStatus"),
+    langToggle: document.getElementById("langToggle")
   };
 
   const wikiRows = window.POE2_LOCATION_DATA.maps.map(([name, type, biome, boss]) => ({
@@ -95,15 +97,96 @@
     realtime: true,
     statsExpanded: false,
     pollTimer: null,
-    generation: 0
+    generation: 0,
+    language: DEFAULT_LANGUAGE,
+    messages: {},
+    serverInfo: null
   };
 
   init();
 
   async function init() {
     wireEvents();
+    await initI18n();
     await Promise.all([initStatsServer(), restoreSavedState()]);
+    applyTranslations();
+    updateLangToggle();
     render();
+  }
+
+  function initI18n() {
+    if (!window.statsServer?.i18nGet) {
+      state.language = DEFAULT_LANGUAGE;
+      state.messages = {};
+      return Promise.resolve();
+    }
+    return window.statsServer
+      .i18nGet()
+      .then((info) => {
+        state.language = info?.language || DEFAULT_LANGUAGE;
+        state.messages = info?.messages || {};
+      })
+      .catch(() => {
+        state.messages = state.messages || {};
+      });
+  }
+
+  function t(key, params) {
+    const template = state.messages?.[key];
+    if (template == null) return key;
+    if (!params) return template;
+    return String(template).replace(/\{([a-zA-Z0-9_]+)\}/g, (match, name) =>
+      Object.prototype.hasOwnProperty.call(params, name)
+        ? String(params[name])
+        : match
+    );
+  }
+
+  function applyTranslations(root = document) {
+    root.querySelectorAll("[data-i18n]").forEach((el) => {
+      el.textContent = t(el.dataset.i18n);
+    });
+    root.querySelectorAll("[data-i18n-html]").forEach((el) => {
+      el.innerHTML = t(el.dataset.i18nHtml);
+    });
+    root.querySelectorAll("[data-i18n-placeholder]").forEach((el) => {
+      el.placeholder = t(el.dataset.i18nPlaceholder);
+    });
+    root.querySelectorAll("[data-i18n-title]").forEach((el) => {
+      el.title = t(el.dataset.i18nTitle);
+    });
+    root.querySelectorAll("[data-i18n-aria-label]").forEach((el) => {
+      el.setAttribute("aria-label", t(el.dataset.i18nAriaLabel));
+    });
+  }
+
+  function updateLangToggle() {
+    if (!els.langToggle) return;
+    els.langToggle.textContent = state.language === "ru" ? "RU" : "EN";
+  }
+
+  function toggleLanguage() {
+    const next = state.language === "ru" ? "en" : "ru";
+    setLanguage(next);
+  }
+
+  function setLanguage(language) {
+    state.language = language;
+    updateLangToggle();
+    const save = persistConfig();
+    const load = window.statsServer?.i18nGet
+      ? save.then(() => window.statsServer.i18nGet())
+      : Promise.resolve({ language, messages: {} });
+    load
+      .then((info) => {
+        state.language = info?.language || language;
+        state.messages = info?.messages || {};
+        applyTranslations();
+        updateLangToggle();
+        if (overlayManagerOpen) renderOverlayList();
+        render();
+      })
+      .catch(() => {});
   }
 
   function wireEvents() {
@@ -160,6 +243,7 @@
 
     els.streamToggle.addEventListener("click", toggleOverlayManager);
     els.addOverlay.addEventListener("click", addOverlay);
+    els.langToggle.addEventListener("click", toggleLanguage);
     els.serverStart.addEventListener("click", toggleServer);
     els.statsPort.addEventListener("change", persistConfig);
     els.autoStart.addEventListener("change", persistConfig);
@@ -302,10 +386,10 @@
         '<label class="field"><span>ID</span>',
         `<input class="overlay-id" type="text" value="${escapeHtml(overlay.id)}" spellcheck="false" autocomplete="off" />`,
         "</label>",
-        '<button class="overlay-delete" type="button" title="Remove overlay" aria-label="Remove overlay">X</button>',
+        '<button class="overlay-delete" type="button" title="' + escapeHtml(t("overlay.remove")) + '" aria-label="' + escapeHtml(t("overlay.remove")) + '">X</button>',
         "</div>",
-        `<textarea class="overlay-template" rows="5" spellcheck="false" aria-label="Overlay template">${escapeHtml(overlay.template)}</textarea>`,
-        `<button class="overlay-url" type="button" data-url="${escapeHtml(url)}" title="Copy link">${escapeHtml(url)}</button>`,
+        `<textarea class="overlay-template" rows="5" spellcheck="false" aria-label="${escapeHtml(t("overlay.templateLabel"))}">${escapeHtml(overlay.template)}</textarea>`,
+        `<button class="overlay-url" type="button" data-url="${escapeHtml(url)}" title="${escapeHtml(t("overlay.copyLink"))}">${escapeHtml(url)}</button>`,
         `<pre class="overlay-preview">${escapeHtml(overlay.rendered)}</pre>`
       ].join("");
       els.overlayList.appendChild(card);
@@ -345,13 +429,15 @@
     els.streamToggle.hidden = !showToggle;
     if (!showToggle) {
       els.overlayManager.hidden = true;
-      els.streamToggle.textContent = "Stream Overlay";
+      els.streamToggle.textContent = t("topbar.streamShow");
       els.streamToggle.setAttribute("aria-pressed", "false");
       els.streamToggle.classList.remove("active-toggle");
       return;
     }
     els.overlayManager.hidden = !overlayManagerOpen;
-    els.streamToggle.textContent = overlayManagerOpen ? "Hide Overlay" : "Stream Overlay";
+    els.streamToggle.textContent = overlayManagerOpen
+      ? t("topbar.streamHide")
+      : t("topbar.streamShow");
     els.streamToggle.setAttribute("aria-pressed", String(overlayManagerOpen));
     els.streamToggle.classList.toggle("active-toggle", overlayManagerOpen);
   }
@@ -382,14 +468,13 @@
     const nextId = field.value.trim();
     if (!isValidOverlayId(nextId)) {
       field.value = overlay.id;
-      els.serverStatus.textContent =
-        "Overlay id may only contain letters, digits, dot, dash, underscore";
+      els.serverStatus.textContent = t("server.idInvalid");
       setServerStatusError(true);
       return;
     }
     if (overlays.some((item, itemIndex) => itemIndex !== index && item.id === nextId)) {
       field.value = overlay.id;
-      els.serverStatus.textContent = "Overlay id must be unique";
+      els.serverStatus.textContent = t("server.idDuplicate");
       setServerStatusError(true);
       return;
     }
@@ -450,7 +535,7 @@
     clearTimeout(element.copyTimer);
     element.classList.toggle("overlay-url-done", ok);
     element.classList.toggle("overlay-url-error", !ok);
-    element.textContent = ok ? "Copied to clipboard" : "Copy failed";
+    element.textContent = ok ? t("overlay.copied") : t("overlay.copyFailed");
     element.copyTimer = setTimeout(() => {
       element.classList.remove("overlay-url-done", "overlay-url-error");
       element.textContent = url;
@@ -480,24 +565,27 @@
         applyServerInfo(info);
       })
       .catch(() => {
-        els.serverStatus.textContent = "Could not read server config";
+        els.serverStatus.textContent = t("server.configReadError");
         setServerStatusError(true);
       });
   }
 
   function applyServerInfo(info) {
     if (!info) return;
+    state.serverInfo = info;
     serverRunning = Boolean(info.running);
-    els.serverStart.textContent = serverRunning ? "Stop server" : "Start server";
+    els.serverStart.textContent = serverRunning
+      ? t("overlayManager.stop")
+      : t("overlayManager.start");
 
     if (info.error) {
-      els.serverStatus.textContent = `Server error: ${info.error}`;
+      els.serverStatus.textContent = t("server.error", { error: info.error });
       setServerStatusError(true);
     } else if (serverRunning) {
-      els.serverStatus.textContent = "Server running on 127.0.0.1";
+      els.serverStatus.textContent = t("server.running");
       setServerStatusError(false);
     } else {
-      els.serverStatus.textContent = "Server stopped";
+      els.serverStatus.textContent = t("server.stopped");
       setServerStatusError(false);
     }
 
@@ -515,23 +603,24 @@
 
   function persistConfig() {
     clearTimeout(configSaveTimer);
-    if (!window.statsServer) return;
+    if (!window.statsServer) return Promise.resolve();
 
     const config = {
       port: Number(els.statsPort.value),
       autoStart: els.autoStart.checked,
       overlayManagerOpen,
+      language: state.language,
       overlays: overlays.map((overlay) => ({
         id: overlay.id,
         template: overlay.template
       }))
     };
 
-    window.statsServer
+    return window.statsServer
       .configSet(config)
       .then(applyServerInfo)
       .catch(() => {
-        els.serverStatus.textContent = "Could not save config";
+        els.serverStatus.textContent = t("server.saveError");
         setServerStatusError(true);
       });
   }
@@ -547,7 +636,7 @@
       ? window.statsServer.serverStop()
       : window.statsServer.serverStart();
     action.then(applyServerInfo).catch(() => {
-      els.serverStatus.textContent = "Could not control server";
+      els.serverStatus.textContent = t("server.controlError");
       setServerStatusError(true);
     });
   }
@@ -573,7 +662,7 @@
       });
       const file = await handle.getFile();
       if (!isClientLog(file)) {
-        els.watchStatus.textContent = "Select Client.txt";
+        els.watchStatus.textContent = t("watch.selectLog");
         return;
       }
       await saveHandle(handle);
@@ -589,16 +678,16 @@
     event.target.value = "";
     if (!file) return;
     if (!isClientLog(file)) {
-      els.watchStatus.textContent = "Select Client.txt";
+      els.watchStatus.textContent = t("watch.selectLog");
       return;
     }
     await deleteHandle();
     await loadFile(file, null, true);
-    els.watchStatus.textContent = "File loaded";
+    els.watchStatus.textContent = t("watch.fileLoaded");
   }
 
   function openFallbackPicker() {
-    els.watchStatus.textContent = "Choose Client.txt";
+    els.watchStatus.textContent = t("watch.chooseLog");
     els.fallbackPicker.click();
   }
 
@@ -639,10 +728,10 @@
       } catch {
         state.fileHandle = null;
         await deleteHandle();
-        els.watchStatus.textContent = "Open Client.txt again";
+        els.watchStatus.textContent = t("watch.reopenLog");
       }
     } else {
-      els.watchStatus.textContent = "Allow log access";
+      els.watchStatus.textContent = t("watch.allowAccess");
     }
   }
 
@@ -658,7 +747,8 @@
     state.fileName = file.name;
     state.lastSize = file.size;
     els.fileName.textContent = file.name;
-    els.watchStatus.textContent = handle && state.realtime ? "Realtime enabled" : "File loaded";
+    els.watchStatus.textContent =
+      handle && state.realtime ? t("watch.realtimeEnabled") : t("watch.fileLoaded");
 
     if (scanNow) {
       await fullScan();
@@ -676,7 +766,7 @@
     const file = await currentFile();
     if (!file || isStale(generation)) return;
 
-    setProgress(12, "Reading recent lines");
+    setProgress(12, t("progress.readingRecent"));
     const start = Math.max(0, file.size - TAIL_BYTES);
     const text = await file.slice(start).text();
     if (isStale(generation)) return;
@@ -689,7 +779,7 @@
     recalculateRunCounts();
     state.lastSize = file.size;
     resetVisibleRows();
-    setProgress(100, `${lines.length} lines`);
+    setProgress(100, t("progress.lines", { count: lines.length.toLocaleString("en-US") }));
     saveLocalState();
     render();
   }
@@ -718,7 +808,7 @@
       let buffer = "";
       let scanned = 0;
       let linesCount = 0;
-      setProgress(0, scanStart ? "Scanning from selected date" : "Full scan");
+      setProgress(0, scanStart ? t("progress.scanningFromDate") : t("progress.fullScan"));
 
       while (true) {
         const { value, done } = await reader.read();
@@ -731,7 +821,7 @@
         linesCount += lines.length;
         const parsed = parseLines(lines, { reset: false });
         state.pending = parsed.pending;
-        setProgress(Math.round((scanned / scanSize) * 100), `${linesCount.toLocaleString("en-US")} lines`);
+        setProgress(Math.round((scanned / scanSize) * 100), t("progress.lines", { count: linesCount.toLocaleString("en-US") }));
       }
 
       if (buffer) parseLines([buffer], { reset: false });
@@ -740,7 +830,7 @@
       recalculateDurations();
       state.lastSize = file.size;
       resetVisibleRows();
-      setProgress(100, `${linesCount.toLocaleString("en-US")} lines`);
+      setProgress(100, t("progress.lines", { count: linesCount.toLocaleString("en-US") }));
       saveLocalState();
       render();
     } catch {
@@ -749,8 +839,8 @@
       state.pending = previous.pending;
       state.deaths = previous.deaths;
       state.lastSize = previous.lastSize;
-      setProgress(0, "Refresh failed");
-      els.watchStatus.textContent = "Scan failed";
+      setProgress(0, t("progress.refreshFailed"));
+      els.watchStatus.textContent = t("watch.scanFailed");
       render();
     }
   }
@@ -760,7 +850,7 @@
 
     let end = file.size;
     let carry = "";
-    setProgress(0, "Finding start date");
+    setProgress(0, t("progress.findingStart"));
 
     while (end > 0) {
       const start = Math.max(0, end - REVERSE_SCAN_CHUNK_BYTES);
@@ -775,7 +865,7 @@
       }
 
       end = start;
-      setProgress(Math.round(((file.size - end) / file.size) * 100), "Finding start date");
+      setProgress(Math.round(((file.size - end) / file.size) * 100), t("progress.findingStart"));
     }
 
     return 0;
@@ -793,7 +883,7 @@
     }
 
     if (file.size === state.lastSize) {
-      els.watchStatus.textContent = "Waiting for new areas";
+      els.watchStatus.textContent = t("watch.waitingNewAreas");
       return;
     }
 
@@ -804,8 +894,8 @@
     recalculateRunCounts();
     recalculateDurations();
     state.lastSize = file.size;
-    setProgress(100, `+${lines.length} lines`);
-    els.watchStatus.textContent = "Updated";
+    setProgress(100, t("progress.addedLines", { count: lines.length }));
+    els.watchStatus.textContent = t("watch.updated");
     saveLocalState();
     render();
   }
@@ -1008,7 +1098,7 @@
     if (state.fileHandle) {
       const permission = await state.fileHandle.requestPermission({ mode: "read" });
       if (permission !== "granted") {
-        els.watchStatus.textContent = "No file access";
+        els.watchStatus.textContent = t("watch.noAccess");
         return null;
       }
       state.file = await state.fileHandle.getFile();
@@ -1020,7 +1110,7 @@
   function startPolling() {
     if (state.pollTimer) clearInterval(state.pollTimer);
     state.pollTimer = setInterval(() => pollFile().catch(() => {
-      els.watchStatus.textContent = "Waiting for file access";
+      els.watchStatus.textContent = t("watch.waitingAccess");
     }), POLL_MS);
   }
 
@@ -1037,7 +1127,9 @@
       pollFile();
     } else {
       stopPolling();
-      els.watchStatus.textContent = state.fileHandle ? "Realtime disabled" : "No file selected";
+      els.watchStatus.textContent = state.fileHandle
+        ? t("watch.realtimeDisabled")
+        : t("watch.noFile");
     }
     saveLocalState();
     renderRealtimeToggle();
@@ -1066,8 +1158,8 @@
     els.characterName.value = "";
     localStorage.removeItem("poe2-map-tracker-state");
     await deleteHandle();
-    setProgress(0, "0 lines");
-    els.watchStatus.textContent = "History cleared";
+    setProgress(0, t("progress.lines", { count: 0 }));
+    els.watchStatus.textContent = t("watch.cleared");
     render();
   }
 
@@ -1077,7 +1169,8 @@
 
   function render() {
     const hasLog = Boolean(state.fileName || state.file || state.fileHandle);
-    els.fileName.textContent = state.fileName || "No log loaded";
+    els.fileName.textContent = state.fileName || t("controls.noLog");
+    if (!hasLog) els.watchStatus.textContent = t("watch.noFile");
     els.setupGuide.hidden = hasLog;
     els.summaryGrid.hidden = !hasLog;
     const showOverlayToggle = hasLog && Boolean(window.statsServer);
@@ -1100,6 +1193,7 @@
     renderLocationStats();
     renderOverlays();
     renderTable();
+    if (state.serverInfo) applyServerInfo(state.serverInfo);
   }
 
   function renderSummary() {
@@ -1150,7 +1244,7 @@
       .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name))
 
     if (!rows.length) {
-      els.locationStats.innerHTML = `<p class="empty-stat">No data yet.</p>`;
+      els.locationStats.innerHTML = `<p class="empty-stat">${escapeHtml(t("stats.empty"))}</p>`;
       return;
     }
 
@@ -1184,7 +1278,7 @@
     const rows = allRows.slice(0, state.visibleRows);
 
     if (!rows.length) {
-      els.historyBody.innerHTML = `<tr><td colspan="7" class="empty">No matching areas yet.</td></tr>`;
+      els.historyBody.innerHTML = `<tr><td colspan="7" class="empty">${escapeHtml(t("table.noMatches"))}</td></tr>`;
       return;
     }
 
@@ -1258,7 +1352,9 @@
 
   function loadMoreRow(visibleCount, totalCount) {
     if (visibleCount >= totalCount) return "";
-    return `<tr><td colspan="7" class="load-more">Showing ${visibleCount} of ${totalCount}. Scroll for more.</td></tr>`;
+    return `<tr><td colspan="7" class="load-more">${escapeHtml(
+      t("table.loadMore", { visible: visibleCount, total: totalCount })
+    )}</td></tr>`;
   }
 
   function setProgress(percent, label) {
@@ -1268,14 +1364,16 @@
 
   function renderRealtimeToggle() {
     if (!state.fileHandle) {
-      els.realtimeToggle.textContent = "Realtime unavailable";
+      els.realtimeToggle.textContent = t("controls.realtimeUnavailable");
       els.realtimeToggle.setAttribute("aria-pressed", "false");
       els.realtimeToggle.classList.remove("active-toggle");
       els.realtimeToggle.disabled = true;
       return;
     }
     els.realtimeToggle.disabled = false;
-    els.realtimeToggle.textContent = state.realtime ? "Realtime: on" : "Realtime: off";
+    els.realtimeToggle.textContent = state.realtime
+      ? t("controls.realtimeOn")
+      : t("controls.realtimeOff");
     els.realtimeToggle.setAttribute("aria-pressed", String(state.realtime));
     els.realtimeToggle.classList.toggle("active-toggle", state.realtime);
   }
@@ -1292,21 +1390,14 @@
     els.statsBand.classList.toggle("expanded", state.statsExpanded);
     els.statsHeader.setAttribute("aria-expanded", String(state.statsExpanded));
     els.statsHint.textContent = state.statsExpanded
-      ? "Click to collapse to 2 rows"
-      : "Showing first 2 rows. Click to expand";
+      ? t("stats.collapseHint")
+      : t("stats.expandHint");
   }
 
   function typeLabel(type) {
-    return {
-      map: "Map",
-      anomaly: "Anomaly",
-      citadel: "Citadel",
-      expedition: "Expedition",
-      hideout: "Hideout",
-      boss: "Boss",
-      special: "Special",
-      town: "Town / UI"
-    }[type] || "Area";
+    const key = `type.${type}`;
+    const label = t(key);
+    return label === key ? t("type.area") : label;
   }
 
   function normalize(value) {
@@ -1366,7 +1457,7 @@
       .replace(/^Map/, "")
       .replace(/_/g, " ")
       .replace(/([a-z])([A-Z])/g, "$1 $2")
-      .trim() || "Unknown";
+      .trim() || t("area.unknown");
   }
 
   function parseTime(value) {
@@ -1389,7 +1480,7 @@
 
   function runDurationLabel(record) {
     if (!isTimedRun(record)) return "";
-    return record.durationMs ? formatDuration(record.durationMs) : "running";
+    return record.durationMs ? formatDuration(record.durationMs) : t("table.running");
   }
 
   function deathCell(record) {
@@ -1412,9 +1503,9 @@
 
   function statDetailLabel(item, averageMs) {
     const parts = [];
-    if (averageMs) parts.push(`avg ${formatDuration(averageMs)}`);
-    if (item.deaths) parts.push(`${item.deaths} death${item.deaths === 1 ? "" : "s"}`);
-    return parts.join(" / ") || "time appears after leaving";
+    if (averageMs) parts.push(t("stats.avg", { duration: formatDuration(averageMs) }));
+    if (item.deaths) parts.push(t("stats.deaths", { count: item.deaths }));
+    return parts.join(" / ") || t("stats.noTime");
   }
 
   function formatDuration(ms) {

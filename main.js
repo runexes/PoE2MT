@@ -7,11 +7,15 @@ const DEFAULT_PORT = 8080
 const OVERLAY_ID_PATTERN = /^[A-Za-z0-9._-]{1,64}$/
 const OVERLAY_ROUTE_PATTERN = /^\/overlays\/map\/([A-Za-z0-9._-]{1,64})$/
 const OVERLAY_EVENTS_PATTERN = /^\/overlays\/map\/([A-Za-z0-9._-]{1,64})\/events$/
-const DEFAULT_TEMPLATE = ["Maps completed: {maps_completed}", "Deaths: {deaths}"].join(
-  "\n"
-)
+const DEFAULT_TEMPLATE = [
+  "Maps completed: {maps_completed}",
+  "Deaths: {deaths}"
+].join("\n")
+
 const DEFAULT_WINDOW = { width: 1248, height: 600 }
 const HEARTBEAT_MS = 20000
+const FALLBACK_LANGUAGE = "en"
+const SUPPORTED_LANGUAGES = ["en", "ru"]
 
 let activeConfig = null
 let server = null
@@ -20,9 +24,57 @@ let serverError = null
 let heartbeatTimer = null
 const latestByOverlay = new Map()
 const clientsByOverlay = new Map()
+const localeCache = new Map()
 
 function defaultOverlays() {
   return [{ id: "map-1", template: DEFAULT_TEMPLATE }]
+}
+
+function guessLanguage() {
+  try {
+    const locale = String(app.getLocale() || "").toLowerCase()
+    if (locale.startsWith("ru")) return "ru"
+  } catch {
+    return FALLBACK_LANGUAGE
+  }
+  return FALLBACK_LANGUAGE
+}
+
+function activeLanguage() {
+  return activeConfig?.language || guessLanguage()
+}
+
+function localeFile(language) {
+  return path.join(__dirname, "locales", `${language}.json`)
+}
+
+function readLocale(language) {
+  if (localeCache.has(language)) return localeCache.get(language)
+  let dict = {}
+  try {
+    dict = JSON.parse(fs.readFileSync(localeFile(language), "utf8"))
+  } catch {
+    dict = {}
+  }
+  localeCache.set(language, dict)
+  return dict
+}
+
+function loadMessages(language) {
+  const fallback = readLocale(FALLBACK_LANGUAGE)
+  if (language === FALLBACK_LANGUAGE) return fallback
+  return { ...fallback, ...readLocale(language) }
+}
+
+function translate(language, key, params) {
+  const messages = loadMessages(language)
+  const template = Object.prototype.hasOwnProperty.call(messages, key)
+    ? messages[key]
+    : key
+  if (!params) return template
+  return String(template).replace(/\{([a-zA-Z0-9_]+)\}/g, (match, name) =>
+    Object.prototype.hasOwnProperty.call(params, name) ? String(params[name]) : match
+  )
 }
 
 function defaultConfig() {
@@ -30,6 +82,7 @@ function defaultConfig() {
     port: DEFAULT_PORT,
     autoStart: false,
     overlayManagerOpen: false,
+    language: guessLanguage(),
     overlays: defaultOverlays()
   }
 }
@@ -87,12 +140,16 @@ function saveConfig(config) {
 
 function validateConfig(candidate) {
   if (!candidate || typeof candidate !== "object") {
-    return { ok: false, error: "Invalid config" }
+    return { ok: false, error: translate(activeLanguage(), "config.invalid") }
   }
+
+  const language = SUPPORTED_LANGUAGES.includes(candidate.language)
+    ? candidate.language
+    : activeLanguage()
 
   const port = Number(candidate.port)
   if (!Number.isInteger(port) || port < 1024 || port > 65535) {
-    return { ok: false, error: "Port must be an integer between 1024 and 65535" }
+    return { ok: false, error: translate(language, "config.portRange") }
   }
 
   const autoStart = Boolean(candidate.autoStart)
@@ -104,16 +161,22 @@ function validateConfig(candidate) {
     if (!item || typeof item !== "object") continue
     const id = String(item.id || "").trim()
     if (!OVERLAY_ID_PATTERN.test(id)) {
-      return { ok: false, error: `Invalid overlay id: ${id || "(empty)"}` }
+      return {
+        ok: false,
+        error: translate(language, "config.idInvalid", { id: id || "(empty)" })
+      }
     }
     if (seen.has(id)) {
-      return { ok: false, error: `Duplicate overlay id: ${id}` }
+      return { ok: false, error: translate(language, "config.idDuplicate", { id }) }
     }
     seen.add(id)
     overlays.push({ id, template: String(item.template || "") })
   }
 
-  return { ok: true, config: { port, autoStart, overlayManagerOpen, overlays } }
+  return {
+    ok: true,
+    config: { port, autoStart, overlayManagerOpen, language, overlays }
+  }
 }
 
 function overlayUrl(config, overlayId) {
@@ -126,11 +189,11 @@ function overlayHtml(overlayId) {
   const eventsUrl = `/overlays/map/${encodeURIComponent(overlayId)}/events`
   return [
     "<!doctype html>",
-    '<html lang="en">',
+    `<html lang="${activeLanguage()}">`,
     "<head>",
     '<meta charset="UTF-8" />',
     '<meta name="viewport" content="width=device-width, initial-scale=1.0" />',
-    "<title>PoE 2 Stats Overlay</title>",
+    `<title>${translate(activeLanguage(), "overlay.pageTitle")}</title>`,
     "<style>",
     "html, body { margin: 0; padding: 0; background: transparent; }",
     'body { font-family: "Cascadia Mono", Consolas, "Courier New", monospace; }',
@@ -229,7 +292,7 @@ function startServer(config) {
     const candidate = http.createServer(handleRequest)
     candidate.on("error", (error) => {
       serverRunning = false
-      serverError = describeError(error)
+      serverError = describeError(error, config.language)
       resolve({ ok: false, error: serverError })
     })
     candidate.listen(config.port, "127.0.0.1", () => {
@@ -286,10 +349,10 @@ function stopHeartbeat() {
   heartbeatTimer = null
 }
 
-function describeError(error) {
-  if (!error) return "Unknown error"
-  if (error.code === "EADDRINUSE") return "Port is already in use"
-  if (error.code === "EACCES") return "Permission denied for this port"
+function describeError(error, language) {
+  if (!error) return translate(language, "server.unknownError")
+  if (error.code === "EADDRINUSE") return translate(language, "server.portInUse")
+  if (error.code === "EACCES") return translate(language, "server.permission")
   return error.message || String(error)
 }
 
@@ -304,6 +367,7 @@ function buildResponse() {
       port: config.port,
       autoStart: config.autoStart,
       overlayManagerOpen: Boolean(config.overlayManagerOpen),
+      language: config.language,
       overlays: config.overlays.map((overlay) => ({
         id: overlay.id,
         template: overlay.template
@@ -351,6 +415,11 @@ ipcMain.on("stats:update", (event, payload) => {
 })
 
 ipcMain.handle("stats:config:get", () => buildResponse())
+
+ipcMain.handle("i18n:get", () => {
+  const language = activeConfig?.language || guessLanguage()
+  return { language, messages: loadMessages(language) }
+})
 
 ipcMain.handle("stats:config:set", async (event, candidate) => {
   const validation = validateConfig(candidate)
