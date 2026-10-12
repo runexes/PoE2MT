@@ -1,0 +1,13 @@
+{
+  "name": "poe2mt-app",
+  "version": "0.1.0",
+  "description": "PoE 2 Map Tracker App",
+  "type": "commonjs",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron ."
+  },
+  "devDependencies": {
+    "electron": "^44.7.0"
+  }
+}
