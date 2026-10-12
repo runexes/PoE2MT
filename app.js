@@ -8,7 +8,18 @@
   const STORE_NAME = "settings";
   const REQUIRED_LOG_FILE = "Client.txt";
   const STATE_VERSION = 12;
-  const DEFAULT_START_DATE = "2026-05-29";
+  const DEFAULT_START_DATE = "2026-09-04";
+
+  const DEFAULT_TEMPLATE = [
+    "Simulacrum: {location_count:Simulacrum of Delusion}",
+    "Voices: 0"
+  ].join("\n");
+  const OVERLAY_ID_PATTERN = /^[A-Za-z0-9._-]{1,64}$/;
+
+  let overlays = [];
+  let overlayManagerOpen = false;
+  let serverRunning = false;
+  let configSaveTimer = null;
 
   const els = {
     nativePicker: document.getElementById("nativePicker"),
@@ -44,7 +55,15 @@
     historyBody: document.getElementById("historyBody"),
     searchBox: document.getElementById("searchBox"),
     afterLoad: Array.from(document.querySelectorAll(".after-load")),
-    filters: Array.from(document.querySelectorAll(".filter"))
+    filters: Array.from(document.querySelectorAll(".filter")),
+    streamToggle: document.getElementById("streamToggle"),
+    overlayManager: document.getElementById("overlayManager"),
+    overlayList: document.getElementById("overlayList"),
+    addOverlay: document.getElementById("addOverlay"),
+    statsPort: document.getElementById("statsPort"),
+    autoStart: document.getElementById("autoStart"),
+    serverStart: document.getElementById("serverStart"),
+    serverStatus: document.getElementById("serverStatus")
   };
 
   const wikiRows = window.POE2_LOCATION_DATA.maps.map(([name, type, biome, boss]) => ({
@@ -83,7 +102,7 @@
 
   async function init() {
     wireEvents();
-    await restoreSavedState();
+    await Promise.all([initStatsServer(), restoreSavedState()]);
     render();
   }
 
@@ -123,6 +142,7 @@
       state.search = normalizeSearch(event.target.value);
       resetVisibleRows();
       renderLocationStats();
+      renderOverlays();
       renderTable();
     });
     els.tableWrap.addEventListener("scroll", handleTableScroll);
@@ -133,8 +153,402 @@
         syncFilterButtons();
         resetVisibleRows();
         renderLocationStats();
+        renderOverlays();
         renderTable();
       });
+    });
+
+    els.streamToggle.addEventListener("click", toggleOverlayManager);
+    els.addOverlay.addEventListener("click", addOverlay);
+    els.serverStart.addEventListener("click", toggleServer);
+    els.statsPort.addEventListener("change", persistConfig);
+    els.autoStart.addEventListener("change", persistConfig);
+    els.overlayList.addEventListener("input", handleOverlayInput);
+    els.overlayList.addEventListener("change", handleOverlayChange);
+    els.overlayList.addEventListener("click", handleOverlayClick);
+  }
+
+  function getTemplateVariables() {
+    const countByType = (type) =>
+      state.records.filter((record) => record.type === type).length;
+
+    const lastVisible = state.records
+      .filter((record) => !isHiddenRecord(record))
+      .at(-1);
+
+    return {
+      maps_completed: countByType("map"),
+      anomalies: countByType("anomaly"),
+      citadels: countByType("citadel"),
+      expeditions: countByType("expedition"),
+      bosses: state.records.filter(
+        (record) => record.type === "boss" || record.type === "special"
+      ).length,
+      deaths: state.deaths.length,
+      current_location: state.pending?.name ?? "",
+      last_area: lastVisible?.name ?? "-",
+      character_name: state.characterName || "",
+      ...getSelectedMapVariables()
+    };
+  }
+
+  function locationStatsFor(name) {
+    if (!name) return null;
+    return state.locations?.get(normalize(name)) || null;
+  }
+
+  function locationVariables(selected) {
+    if (!selected) {
+      return {
+        selected_map_count: 0,
+        selected_map_name: "",
+        selected_map_avg: "",
+        selected_map_deaths: 0
+      };
+    }
+
+    const averageMs = selected.timedCount ? selected.totalMs / selected.timedCount : 0;
+    return {
+      selected_map_count: selected.count,
+      selected_map_name: selected.name,
+      selected_map_avg: averageMs ? formatDuration(averageMs) : "",
+      selected_map_deaths: selected.deaths
+    };
+  }
+
+  function getSelectedMapVariables() {
+    const selected = state.locationFilter
+      ? locationStatsFor(state.locationFilter.key)
+      : null;
+    return locationVariables(selected);
+  }
+
+  const DYNAMIC_VARIABLE_TARGETS = {
+    location_count: "selected_map_count",
+    location_avg: "selected_map_avg",
+    location_deaths: "selected_map_deaths"
+  };
+
+  function resolveDynamicVariable(key, arg) {
+    const target = DYNAMIC_VARIABLE_TARGETS[key];
+    if (!target) return null;
+    const selected = locationStatsFor(arg);
+    if (!selected) return null;
+    return locationVariables(selected)[target];
+  }
+
+  function renderTemplate(template, variables) {
+    return template.replace(
+      /\{([a-zA-Z_][a-zA-Z0-9_]*)(?::([^}]+))?\}/g,
+      (match, key, arg) => {
+        if (arg !== undefined) {
+          const value = resolveDynamicVariable(key, arg.trim());
+          return value != null ? String(value) : match;
+        }
+        return Object.prototype.hasOwnProperty.call(variables, key)
+          ? String(variables[key])
+          : match;
+      }
+    );
+  }
+
+  function renderOverlays() {
+    const variables = getTemplateVariables();
+
+    overlays.forEach((overlay, index) => {
+      overlay.rendered = renderTemplate(overlay.template, variables);
+      const card = els.overlayList.querySelector(
+        `.overlay-card[data-index="${index}"]`
+      );
+      const preview = card?.querySelector(".overlay-preview");
+      if (preview) preview.textContent = overlay.rendered;
+      window.statsServer?.publish({
+        overlayId: overlay.id,
+        text: overlay.rendered,
+        variables
+      });
+    });
+  }
+
+  function publishOverlay(index) {
+    const overlay = overlays[index];
+    if (!overlay) return;
+
+    const variables = getTemplateVariables();
+    overlay.rendered = renderTemplate(overlay.template, variables);
+
+    const card = els.overlayList.querySelector(
+      `.overlay-card[data-index="${index}"]`
+    );
+    const preview = card?.querySelector(".overlay-preview");
+    if (preview) preview.textContent = overlay.rendered;
+
+    window.statsServer?.publish({
+      overlayId: overlay.id,
+      text: overlay.rendered,
+      variables
+    });
+  }
+
+  function renderOverlayList() {
+    els.overlayList.innerHTML = "";
+    overlays.forEach((overlay, index) => {
+      const card = document.createElement("div");
+      card.className = "overlay-card";
+      card.dataset.index = String(index);
+      const url = overlayUrl(overlay.id);
+      card.innerHTML = [
+        '<div class="overlay-card-head">',
+        '<label class="field"><span>ID</span>',
+        `<input class="overlay-id" type="text" value="${escapeHtml(overlay.id)}" spellcheck="false" autocomplete="off" />`,
+        "</label>",
+        '<button class="overlay-delete" type="button" title="Remove overlay" aria-label="Remove overlay">X</button>',
+        "</div>",
+        `<textarea class="overlay-template" rows="5" spellcheck="false" aria-label="Overlay template">${escapeHtml(overlay.template)}</textarea>`,
+        `<button class="overlay-url" type="button" data-url="${escapeHtml(url)}" title="Copy link">${escapeHtml(url)}</button>`,
+        `<pre class="overlay-preview">${escapeHtml(overlay.rendered)}</pre>`
+      ].join("");
+      els.overlayList.appendChild(card);
+    });
+  }
+
+  function overlayUrl(overlayId) {
+    const port = Number(els.statsPort.value) || 8080;
+    return `http://localhost:${port}/overlays/map/${encodeURIComponent(overlayId)}`;
+  }
+
+  function uniqueOverlayId() {
+    let index = overlays.length + 1;
+    let candidate = `map-${index}`;
+    while (overlays.some((overlay) => overlay.id === candidate)) {
+      index += 1;
+      candidate = `map-${index}`;
+    }
+    return candidate;
+  }
+
+  function addOverlay() {
+    overlays.push({ id: uniqueOverlayId(), template: DEFAULT_TEMPLATE, rendered: "" });
+    renderOverlayList();
+    persistConfig();
+    renderOverlays();
+  }
+
+  function toggleOverlayManager() {
+    overlayManagerOpen = !overlayManagerOpen;
+    applyOverlayManagerState(true);
+    if (overlayManagerOpen) renderOverlayList();
+    persistConfig();
+  }
+
+  function applyOverlayManagerState(showToggle) {
+    els.streamToggle.hidden = !showToggle;
+    if (!showToggle) {
+      els.overlayManager.hidden = true;
+      els.streamToggle.textContent = "Stream Overlay";
+      els.streamToggle.setAttribute("aria-pressed", "false");
+      els.streamToggle.classList.remove("active-toggle");
+      return;
+    }
+    els.overlayManager.hidden = !overlayManagerOpen;
+    els.streamToggle.textContent = overlayManagerOpen ? "Hide Overlay" : "Stream Overlay";
+    els.streamToggle.setAttribute("aria-pressed", String(overlayManagerOpen));
+    els.streamToggle.classList.toggle("active-toggle", overlayManagerOpen);
+  }
+
+  function isValidOverlayId(value) {
+    return OVERLAY_ID_PATTERN.test(value);
+  }
+
+  function handleOverlayInput(event) {
+    const field = event.target.closest(".overlay-template");
+    if (!field) return;
+    const card = field.closest(".overlay-card");
+    const index = Number(card.dataset.index);
+    if (!overlays[index]) return;
+    overlays[index].template = field.value;
+    publishOverlay(index);
+    scheduleConfigSave();
+  }
+
+  function handleOverlayChange(event) {
+    const field = event.target.closest(".overlay-id");
+    if (!field) return;
+    const card = field.closest(".overlay-card");
+    const index = Number(card.dataset.index);
+    const overlay = overlays[index];
+    if (!overlay) return;
+
+    const nextId = field.value.trim();
+    if (!isValidOverlayId(nextId)) {
+      field.value = overlay.id;
+      els.serverStatus.textContent =
+        "Overlay id may only contain letters, digits, dot, dash, underscore";
+      setServerStatusError(true);
+      return;
+    }
+    if (overlays.some((item, itemIndex) => itemIndex !== index && item.id === nextId)) {
+      field.value = overlay.id;
+      els.serverStatus.textContent = "Overlay id must be unique";
+      setServerStatusError(true);
+      return;
+    }
+
+    overlay.id = nextId;
+    renderOverlayList();
+    persistConfig();
+    renderOverlays();
+  }
+
+  function handleOverlayClick(event) {
+    const urlElement = event.target.closest(".overlay-url");
+    if (urlElement) {
+      const url = urlElement.dataset.url || "";
+      copyToClipboard(url).then((ok) => flashUrl(urlElement, url, ok));
+      return;
+    }
+    const button = event.target.closest(".overlay-delete");
+    if (!button) return;
+    const card = button.closest(".overlay-card");
+    const index = Number(card.dataset.index);
+    if (!overlays[index]) return;
+    overlays.splice(index, 1);
+    renderOverlayList();
+    persistConfig();
+    renderOverlays();
+  }
+
+  function copyToClipboard(text) {
+    if (!text) return Promise.resolve(false);
+    if (navigator.clipboard?.writeText) {
+      return navigator.clipboard
+        .writeText(text)
+        .then(() => true)
+        .catch(() => fallbackCopy(text));
+    }
+    return Promise.resolve(fallbackCopy(text));
+  }
+
+  function fallbackCopy(text) {
+    try {
+      const area = document.createElement("textarea");
+      area.value = text;
+      area.setAttribute("readonly", "");
+      area.style.position = "fixed";
+      area.style.opacity = "0";
+      document.body.appendChild(area);
+      area.select();
+      const ok = document.execCommand("copy");
+      document.body.removeChild(area);
+      return ok;
+    } catch {
+      return false;
+    }
+  }
+
+  function flashUrl(element, url, ok) {
+    clearTimeout(element.copyTimer);
+    element.classList.toggle("overlay-url-done", ok);
+    element.classList.toggle("overlay-url-error", !ok);
+    element.textContent = ok ? "Copied to clipboard" : "Copy failed";
+    element.copyTimer = setTimeout(() => {
+      element.classList.remove("overlay-url-done", "overlay-url-error");
+      element.textContent = url;
+    }, 1200);
+  }
+
+  function initStatsServer() {
+    if (!window.statsServer) {
+      els.streamToggle.hidden = true;
+      if (els.overlayManager) els.overlayManager.hidden = true;
+      return Promise.resolve();
+    }
+
+    return window.statsServer
+      .getConfig()
+      .then((info) => {
+        if (!info?.config) return;
+        els.statsPort.value = info.config.port;
+        els.autoStart.checked = Boolean(info.config.autoStart);
+        overlayManagerOpen = Boolean(info.config.overlayManagerOpen);
+        overlays = (info.config.overlays || []).map((overlay) => ({
+          id: overlay.id,
+          template: overlay.template || "",
+          rendered: ""
+        }));
+        renderOverlayList();
+        applyServerInfo(info);
+      })
+      .catch(() => {
+        els.serverStatus.textContent = "Could not read server config";
+        setServerStatusError(true);
+      });
+  }
+
+  function applyServerInfo(info) {
+    if (!info) return;
+    serverRunning = Boolean(info.running);
+    els.serverStart.textContent = serverRunning ? "Stop server" : "Start server";
+
+    if (info.error) {
+      els.serverStatus.textContent = `Server error: ${info.error}`;
+      setServerStatusError(true);
+    } else if (serverRunning) {
+      els.serverStatus.textContent = "Server running on 127.0.0.1";
+      setServerStatusError(false);
+    } else {
+      els.serverStatus.textContent = "Server stopped";
+      setServerStatusError(false);
+    }
+
+    els.overlayList.querySelectorAll(".overlay-url").forEach((element, index) => {
+      if (!overlays[index]) return;
+      const url = overlayUrl(overlays[index].id);
+      element.dataset.url = url;
+      element.textContent = url;
+    });
+  }
+
+  function setServerStatusError(isError) {
+    els.serverStatus.classList.toggle("server-status-error", isError);
+  }
+
+  function persistConfig() {
+    clearTimeout(configSaveTimer);
+    if (!window.statsServer) return;
+
+    const config = {
+      port: Number(els.statsPort.value),
+      autoStart: els.autoStart.checked,
+      overlayManagerOpen,
+      overlays: overlays.map((overlay) => ({
+        id: overlay.id,
+        template: overlay.template
+      }))
+    };
+
+    window.statsServer
+      .configSet(config)
+      .then(applyServerInfo)
+      .catch(() => {
+        els.serverStatus.textContent = "Could not save config";
+        setServerStatusError(true);
+      });
+  }
+
+  function scheduleConfigSave() {
+    clearTimeout(configSaveTimer);
+    configSaveTimer = setTimeout(persistConfig, 400);
+  }
+
+  function toggleServer() {
+    if (!window.statsServer) return;
+    const action = serverRunning
+      ? window.statsServer.serverStop()
+      : window.statsServer.serverStart();
+    action.then(applyServerInfo).catch(() => {
+      els.serverStatus.textContent = "Could not control server";
+      setServerStatusError(true);
     });
   }
 
@@ -666,6 +1080,8 @@
     els.fileName.textContent = state.fileName || "No log loaded";
     els.setupGuide.hidden = hasLog;
     els.summaryGrid.hidden = !hasLog;
+    const showOverlayToggle = hasLog && Boolean(window.statsServer);
+    applyOverlayManagerState(showOverlayToggle);
     els.statsBand.hidden = !hasLog;
     els.workspace.hidden = !hasLog;
     els.controlBand.classList.toggle("setup-mode", !hasLog);
@@ -682,6 +1098,7 @@
     renderStatsState();
     renderSummary();
     renderLocationStats();
+    renderOverlays();
     renderTable();
   }
 
@@ -703,10 +1120,12 @@
 
   function renderLocationStats() {
     const stats = new Map();
+    state.locations = new Map();
     for (const record of state.records) {
       if (isHiddenRecord(record)) continue;
       const keyName = record.name;
-      const key = `${normalize(keyName)}:${record.type}`;
+      const keyNormalized = normalize(keyName);
+      const key = `${keyNormalized}:${record.type}`;
       const current = stats.get(key) || {
         name: keyName,
         type: record.type,
@@ -724,6 +1143,7 @@
         current.timedCount += 1;
       }
       stats.set(key, current);
+      state.locations.set(keyNormalized, current);
     }
 
     const rows = Array.from(stats.values())
@@ -812,6 +1232,7 @@
     syncFilterButtons();
     resetVisibleRows();
     renderLocationStats();
+    renderOverlays();
     renderTable();
   }
 
@@ -823,6 +1244,7 @@
     syncFilterButtons();
     resetVisibleRows();
     renderLocationStats();
+    renderOverlays();
     renderTable();
   }
 

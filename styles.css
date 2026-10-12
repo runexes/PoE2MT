@@ -270,6 +270,7 @@ button:hover {
 .active-toggle {
   border-color: var(--ok);
   background: #1f2d1d;
+  color: #fff;
 }
 
 .date-field {
@@ -696,4 +697,196 @@ td small {
     padding: 14px;
     flex-direction: column;
   }
+}
+
+.topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.overlay-manager {
+  margin: 16px 0;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+}
+
+.overlay-manager[hidden] {
+  display: none !important;
+}
+
+.overlay-manager-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.server-settings {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--line);
+}
+
+.field {
+  min-height: 42px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel-2);
+  color: var(--muted);
+}
+
+.field span {
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.field input {
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+}
+
+#statsPort {
+  width: 96px;
+}
+
+.server-auto-start {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.server-auto-start input {
+  accent-color: var(--accent);
+}
+
+.server-status {
+  width: 100%;
+  margin: 2px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
+.server-status-error {
+  color: var(--danger);
+}
+
+.overlay-help {
+  margin: 12px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.overlay-list {
+  display: grid;
+  gap: 14px;
+  margin-top: 14px;
+}
+
+.overlay-card {
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel-2);
+}
+
+.overlay-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.overlay-card-head .field {
+  flex: 1;
+  min-width: 0;
+}
+
+.overlay-id {
+  width: 100%;
+}
+
+.overlay-delete {
+  min-width: 42px;
+  padding: 0;
+  color: var(--danger);
+}
+
+.overlay-template {
+  display: block;
+  width: 100%;
+  min-height: 120px;
+  padding: 12px;
+  resize: vertical;
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  font: inherit;
+  line-height: 1.6;
+}
+
+.overlay-url {
+  display: block;
+  width: 100%;
+  min-height: 0;
+  margin-top: 10px;
+  padding: 8px 10px;
+  text-align: left;
+  color: var(--accent-2);
+  background: var(--bg);
+  border-color: var(--line);
+  font-family: Menlo, Consolas, "Courier New", monospace;
+  font-size: 12px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+
+.overlay-url:hover {
+  border-color: var(--accent-2);
+}
+
+.overlay-url-done,
+.overlay-url-done:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.overlay-url-error,
+.overlay-url-error:hover {
+  color: var(--danger);
+  border-color: var(--danger);
+}
+
+.overlay-preview {
+  margin: 10px 0 0;
+  padding: 10px;
+  color: var(--text);
+  background: var(--bg);
+  border: 1px dashed var(--line);
+  border-radius: 8px;
+  font: inherit;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }

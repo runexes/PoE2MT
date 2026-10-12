@@ -13,7 +13,10 @@
         <div>
           <p class="eyebrow">PoE 2 Local Map tracker</p>
         </div>
-        <div class="status-pill" id="watchStatus">No file selected</div>
+        <div class="topbar-actions">
+          <button id="streamToggle" class="primary-button" type="button" aria-pressed="false" hidden>Stream Overlay</button>
+          <div class="status-pill" id="watchStatus">No file selected</div>
+        </div>
       </header>
 
       <section class="setup-guide" id="setupGuide" aria-label="First launch setup">
@@ -52,7 +55,7 @@
           <input id="fallbackPicker" type="file" accept=".txt,.log,text/plain" hidden />
           <button id="fullScan" class="after-load" type="button" hidden>Refresh</button>
           <button id="clearData" class="after-load" type="button" hidden>Clear</button>
-          <button id="realtimeToggle" class="after-load" type="button" aria-pressed="true" hidden>Realtime: on</button>          
+          <button id="realtimeToggle" class="after-load" type="button" aria-pressed="true" hidden>Realtime: on</button>
         </div>
         <div class="progress-wrap after-load" aria-live="polite" hidden>
           <div class="progress-meta">
@@ -61,6 +64,39 @@
           </div>
           <div class="progress-track"><div id="progressBar"></div></div>
         </div>
+      </section>
+
+      <section class="overlay-manager" id="overlayManager" hidden>
+        <div class="overlay-manager-head">
+          <h2>Custom Overlay</h2>
+          <button id="addOverlay" class="primary-button" type="button">+ Add overlay</button>
+        </div>
+
+        <div class="server-settings">
+          <label class="field">
+            <span>Port</span>
+            <input id="statsPort" type="number" min="1024" max="65535" step="1" />
+          </label>
+          <label class="server-auto-start">
+            <input id="autoStart" type="checkbox" />
+            <span>Start server on launch</span>
+          </label>
+          <button id="serverStart" type="button">Start server</button>
+          <p class="server-status" id="serverStatus">Server stopped</p>
+        </div>
+        <div class="overlay-list" id="overlayList"></div>
+
+        <p class="overlay-help">
+          Use {maps_completed}, {anomalies}, {citadels}, {expeditions},
+          {bosses}, {deaths}, {current_location}, {last_area},
+          {character_name}.<br>
+          Selected location (click a row in "Runs by location"):
+          {selected_map_name}, {selected_map_count},
+          {selected_map_avg}, {selected_map_deaths}.<br>
+          Any location by name: {location_count:NAME},
+          {location_avg:NAME}, {location_deaths:NAME}.<br>
+          Unknown variables remain unchanged.
+        </p>
       </section>
 
       <section class="summary-grid" id="summaryGrid" aria-label="Summary" hidden>
