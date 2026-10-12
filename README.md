@@ -51,4 +51,4 @@ steamapps\common\Path of Exile 2\logs\Client.txt
 - Works locally in Chrome.
 - The app only reads the selected log file.
 - Map completion time is calculated from entering an area until the next area transition.
-- Location metadata is stored locally in `locations.js`.
+- Location metadata is stored locally in `src/locations.js`.

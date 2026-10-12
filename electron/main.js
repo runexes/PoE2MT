@@ -45,7 +45,7 @@ function activeLanguage() {
 }
 
 function localeFile(language) {
-  return path.join(__dirname, "locales", `${language}.json`)
+  return path.join(__dirname, "..", "i18n", `${language}.json`)
 }
 
 function readLocale(language) {
@@ -399,7 +399,7 @@ const createWindow = () => {
     saveWindowState(win)
   })
 
-  win.loadFile("index.html")
+  win.loadFile(path.join(__dirname, "..", "src", "index.html"))
 }
 
 ipcMain.on("stats:update", (event, payload) => {

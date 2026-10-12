@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "description": "PoE 2 Map Tracker App",
   "type": "commonjs",
-  "main": "main.js",
+  "main": "electron/main.js",
   "scripts": {
     "start": "electron ."
   },
