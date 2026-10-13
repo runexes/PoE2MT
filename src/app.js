@@ -10,6 +10,82 @@
   const STATE_VERSION = 12;
   const DEFAULT_START_DATE = "2026-09-04";
   const DEFAULT_LANGUAGE = "en";
+  const LOG_READ_CHUNK = 256 * 1024;
+
+  const isElectron = Boolean(window.statsServer);
+
+  class RemoteClientFile {
+    constructor(filePath) {
+      this.filePath = filePath;
+      this.lastSize = 0;
+    }
+
+    get name() {
+      return REQUIRED_LOG_FILE;
+    }
+
+    get size() {
+      return this.lastSize;
+    }
+
+    async refresh() {
+      if (!window.statsServer?.logInfo) return this.lastSize;
+      try {
+        const info = await window.statsServer.logInfo(this.filePath);
+        if (info && Number.isFinite(info.size)) this.lastSize = info.size;
+      } catch {
+        return this.lastSize;
+      }
+      return this.lastSize;
+    }
+
+    async readRange(start, length) {
+      const data = await window.statsServer.logRead(this.filePath, start, length);
+      return data || new Uint8Array(0);
+    }
+
+    async requestPermission() {
+      return "granted";
+    }
+
+    async getFile() {
+      await this.refresh();
+      return this;
+    }
+
+    slice(start = 0, end = this.lastSize) {
+      const file = this;
+      const startPos = Math.max(0, start);
+      const endPos = Math.max(startPos, Math.min(end, file.lastSize));
+      return {
+        text: async () => {
+          const data = await file.readRange(startPos, endPos - startPos);
+          return new TextDecoder("utf-8").decode(data);
+        },
+        stream: () => ({
+          getReader: () => remoteStreamReader(file, startPos, endPos)
+        })
+      };
+    }
+  }
+
+  function remoteStreamReader(file, start, end) {
+    let offset = start;
+    return {
+      async read() {
+        if (offset >= end) return { value: undefined, done: true };
+        const length = Math.min(LOG_READ_CHUNK, end - offset);
+        const data = await file.readRange(offset, length);
+        if (!data || data.byteLength === 0) return { value: undefined, done: true };
+        offset += data.byteLength;
+        return { value: data, done: false };
+      },
+      async cancel() {
+        offset = end;
+      },
+      releaseLock() {}
+    };
+  }
 
   const DEFAULT_TEMPLATE = [
     "Simulacrum: {location_count:Simulacrum of Delusion}",
@@ -84,6 +160,7 @@
     fileHandle: null,
     file: null,
     fileName: "",
+    filePath: "",
     lastSize: 0,
     pending: null,
     records: [],
@@ -650,6 +727,10 @@
   }
 
   async function chooseNativeFile() {
+    if (window.statsServer?.pickLogFile) {
+      await chooseElectronFile();
+      return;
+    }
     if (!window.showOpenFilePicker) {
       openFallbackPicker();
       return;
@@ -671,6 +752,30 @@
       if (isPickerCancel(error)) return;
       openFallbackPicker();
     }
+  }
+
+  async function chooseElectronFile() {
+    let picked = null;
+    try {
+      picked = await window.statsServer.pickLogFile();
+    } catch {
+      return;
+    }
+    if (!picked || !picked.path) return;
+    const file = new RemoteClientFile(picked.path);
+    try {
+      await file.getFile();
+    } catch {
+      els.watchStatus.textContent = t("watch.selectLog");
+      return;
+    }
+    if (!isClientLog(file)) {
+      els.watchStatus.textContent = t("watch.selectLog");
+      return;
+    }
+    await deleteHandle();
+    state.filePath = picked.path;
+    await loadFile(file, file, true);
   }
 
   async function chooseFallbackFile(event) {
@@ -709,11 +814,22 @@
       state.fileName = saved.fileName || "";
     }
 
-    const handle = await readHandle();
+    let handle = await readHandle();
+    if (!handle && isElectron && state.filePath) {
+      const candidate = new RemoteClientFile(state.filePath);
+      try {
+        await candidate.getFile();
+        handle = candidate;
+      } catch {
+        state.filePath = "";
+      }
+    }
     if (!handle) return;
 
     state.fileHandle = handle;
-    const permission = await handle.queryPermission({ mode: "read" });
+    const permission = handle.requestPermission
+      ? await handle.requestPermission({ mode: "read" })
+      : await handle.queryPermission({ mode: "read" });
     if (permission === "granted") {
       try {
         const file = await handle.getFile();
@@ -1147,6 +1263,7 @@
     state.fileHandle = null;
     state.file = null;
     state.fileName = "";
+    state.filePath = "";
     state.lastSize = 0;
     state.pending = null;
     state.records = [];
@@ -1541,6 +1658,7 @@
       deaths: state.deaths,
       lastSize: state.lastSize,
       fileName: state.fileName,
+      filePath: state.filePath,
       realtime: state.realtime,
       statsExpanded: state.statsExpanded,
       startDate: state.startDate,

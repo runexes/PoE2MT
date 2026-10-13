@@ -48,6 +48,7 @@
   "server.unknownError": "Unknown error",
   "server.portInUse": "Port is already in use",
   "server.permission": "Permission denied for this port",
+  "dialog.openLog": "Select Client.txt",
   "config.invalid": "Invalid config",
   "config.portRange": "Port must be an integer between 1024 and 65535",
   "config.idInvalid": "Invalid overlay id: {id}",

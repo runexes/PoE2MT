@@ -48,6 +48,7 @@
   "server.unknownError": "Неизвестная ошибка",
   "server.portInUse": "Порт уже занят",
   "server.permission": "Отказано в доступе к порту",
+  "dialog.openLog": "Выберите Client.txt",
   "config.invalid": "Некорректный конфиг",
   "config.portRange": "Порт должен быть целым числом от 1024 до 65535",
   "config.idInvalid": "Некорректный ID оверлея: {id}",

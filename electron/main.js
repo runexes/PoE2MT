@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain } = require('electron')
+const { app, BrowserWindow, ipcMain, dialog } = require('electron')
 const http = require('http')
 const path = require('path')
 const fs = require('fs')
@@ -445,6 +445,46 @@ ipcMain.handle("stats:server:start", async () => {
 ipcMain.handle("stats:server:stop", () => {
   stopServer()
   return buildResponse()
+})
+
+ipcMain.handle("logs:pick", async () => {
+  const result = await dialog.showOpenDialog({
+    title: translate(activeLanguage(), "dialog.openLog"),
+    properties: ["openFile"],
+    filters: [{ name: "Client log", extensions: ["txt", "log"] }]
+  })
+  if (result.canceled || !result.filePaths.length) return null
+  return { path: result.filePaths[0] }
+})
+
+ipcMain.handle("logs:info", async (event, filePath) => {
+  if (typeof filePath !== "string" || !filePath) return null
+  try {
+    const stat = await fs.promises.stat(filePath)
+    return { size: stat.size, mtimeMs: stat.mtimeMs }
+  } catch {
+    return null
+  }
+})
+
+ipcMain.handle("logs:read", async (event, filePath, offset, length) => {
+  if (typeof filePath !== "string" || !filePath) return Buffer.alloc(0)
+  const start = Number(offset)
+  const wanted = Number(length)
+  if (!Number.isInteger(start) || start < 0 || !Number.isInteger(wanted) || wanted <= 0) {
+    return Buffer.alloc(0)
+  }
+  let handle = null
+  try {
+    handle = await fs.promises.open(filePath, "r")
+    const buffer = Buffer.alloc(wanted)
+    const { bytesRead } = await handle.read(buffer, 0, wanted, start)
+    return bytesRead === wanted ? buffer : buffer.subarray(0, bytesRead)
+  } catch {
+    return Buffer.alloc(0)
+  } finally {
+    if (handle) await handle.close()
+  }
 })
 
 app.whenReady().then(async () => {
