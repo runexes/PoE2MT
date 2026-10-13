@@ -1,0 +1,12 @@
+* text=auto eol=lf
+
+*.ico binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+
+src/bundle.js linguist-generated=true
+package-lock.json linguist-generated=true
+
+dist/** linguist-generated=true

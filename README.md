@@ -101,9 +101,13 @@ i18n/                en.json, ru.json
 tests/               node:test unit tests
 ```
 
+## Contributing
+
+Contributions are welcome. See [`CONTRIBUTING.md`](CONTRIBUTING.md) for setup, commands, code style and the PR process. Please report security issues privately as described in [`SECURITY.md`](SECURITY.md), and follow the [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md).
+
 ## Notes
 
 - The app only reads the selected log file.
 - Map completion time is calculated from entering an area until the next area transition.
-- Location metadata lives in `src/locations.data.js`.
+- Location metadata lives in `src/data/locations.data.js`.
 - Translations live in `i18n/` and are shared by the renderer and the overlay server.

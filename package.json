@@ -1,7 +1,29 @@
 {
   "name": "poe2mt-app",
   "version": "0.1.0",
-  "description": "PoE 2 Map Tracker App",
+  "description": "Electron desktop tracker for Path of Exile 2 map runs.",
+  "license": "MIT",
+  "author": "runexes (https://github.com/runexes)",
+  "homepage": "https://github.com/runexes/PoE2MT#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/runexes/PoE2MT.git"
+  },
+  "bugs": {
+    "url": "https://github.com/runexes/PoE2MT/issues"
+  },
+  "keywords": [
+    "path-of-exile",
+    "path-of-exile-2",
+    "poe2",
+    "electron",
+    "tracker",
+    "overlay",
+    "client.txt"
+  ],
+  "engines": {
+    "node": ">=22.12.0"
+  },
   "type": "commonjs",
   "main": "electron/main.js",
   "scripts": {
