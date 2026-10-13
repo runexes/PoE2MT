@@ -4,6 +4,10 @@ Electron desktop tracker for Path of Exile 2 map runs.
 
 The app reads `Client.txt`, detects area changes, groups runs by location, counts repeated runs, tracks map duration, and updates while the game keeps writing to the log. It can also serve custom stream overlays over HTTP so tools like OBS can display live stats.
 
+## Origin
+
+This project is a fork of [PoE2MT](https://github.com/igodspy/PoE2MT) by [igodspy](https://github.com/igodspy), based on the original project and extended with additional functionality. Part of the original code belongs to the original author; see the [LICENSE](LICENSE) for details.
+
 ## How to use
 
 1. Launch the app (`npm start`, or the packaged build).
