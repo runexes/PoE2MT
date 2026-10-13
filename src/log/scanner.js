@@ -249,6 +249,7 @@ export async function restoreSavedState() {
     recalculateDurations();
     state.lastSize = savedLastSize;
     state.fileName = saved.fileName || "";
+    state.filePath = saved.filePath || "";
   }
 
   let handle = await readHandle();
