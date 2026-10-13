@@ -97,6 +97,9 @@ coverage/
 dist/
 build/Release
 
+# Bundled renderer output
+src/bundle.js
+
 # TypeScript cache
 *.tsbuildinfo
 

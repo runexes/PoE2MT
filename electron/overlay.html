@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="{{lang}}">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{{title}}</title>
+    <style>
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        background: transparent;
+      }
+      body {
+        font-family: "Cascadia Mono", Consolas, "Courier New", monospace;
+      }
+      #stats {
+        margin: 0;
+        padding: 16px 20px;
+        color: #f4f7ee;
+        font-size: 34px;
+        line-height: 1.35;
+        font-weight: 700;
+        white-space: pre-wrap;
+        overflow-wrap: anywhere;
+        text-shadow: 0 2px 6px rgba(0, 0, 0, 0.85);
+      }
+    </style>
+  </head>
+  <body>
+    <div id="stats"></div>
+    <script>
+      (function () {
+        var container = document.getElementById("stats")
+        var source = new EventSource({{eventsUrl}})
+        source.onmessage = function (event) {
+          try {
+            var data = JSON.parse(event.data)
+            container.textContent = data && typeof data.text === "string" ? data.text : ""
+          } catch (error) {
+            container.textContent = ""
+          }
+        }
+      })()
+    </script>
+  </body>
+</html>

@@ -1,4 +1,4 @@
-window.POE2_LOCATION_DATA = {
+export const POE2_LOCATION_DATA = {
   source: "https://www.poe2wiki.net/wiki/List_of_maps; https://poe2db.tw/Anomaly_Map",
   updated: "2026-06-24",
   maps: [

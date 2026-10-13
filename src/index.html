@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title data-i18n="app.title">PoE 2 Map Tracker</title>
     <link rel="stylesheet" href="./styles.css" />
-    <link href="favicon.ico" rel="shortcut icon" >
+    <link href="favicon.ico" rel="shortcut icon" />
   </head>
   <body>
     <main class="app-shell">
@@ -15,7 +15,9 @@
         </div>
         <div class="topbar-actions">
           <button id="langToggle" class="lang-toggle" type="button" data-i18n-title="lang.toggle">EN</button>
-          <button id="streamToggle" class="primary-button" type="button" aria-pressed="false" hidden>Stream Overlay</button>
+          <button id="streamToggle" class="primary-button" type="button" aria-pressed="false" hidden>
+            Stream Overlay
+          </button>
           <div class="status-pill" id="watchStatus">No file selected</div>
         </div>
       </header>
@@ -24,7 +26,10 @@
         <div class="setup-copy">
           <p class="setup-kicker" data-i18n="setup.kicker">First launch</p>
           <h2 data-i18n="setup.title">Choose the start date before the log file</h2>
-          <p data-i18n="setup.body">Client.txt can grow for weeks and become very large. The start date tells the tracker where your useful history begins, so it can search backward from the end of the log and skip old sessions.</p>
+          <p data-i18n="setup.body">
+            Client.txt can grow for weeks and become very large. The start date tells the tracker where your useful
+            history begins, so it can search backward from the end of the log and skip old sessions.
+          </p>
         </div>
         <ol class="setup-steps">
           <li>
@@ -33,7 +38,10 @@
           </li>
           <li>
             <strong data-i18n="setup.step2.title">Open Client.txt</strong>
-            <span data-i18n-html="setup.step2.body">Use Open Client.txt first for realtime updates. <br/> If Windows blocks the log as a system file, use Open once instead.</span>
+            <span data-i18n-html="setup.step2.body"
+              >Use Open Client.txt first for realtime updates. <br />
+              If Windows blocks the log as a system file, use Open once instead.</span
+            >
           </li>
           <li>
             <strong data-i18n="setup.step3.title">Keep this page open</strong>
@@ -48,7 +56,9 @@
             <span data-i18n="controls.startDate">Start date</span>
             <input id="startDate" type="date" />
           </label>
-          <button id="nativePicker" class="primary-button" type="button" data-i18n="controls.openLog">Open Client.txt</button>
+          <button id="nativePicker" class="primary-button" type="button" data-i18n="controls.openLog">
+            Open Client.txt
+          </button>
           <span class="fallback-control" id="fallbackControl">
             <button id="fallbackButton" type="button" data-i18n="controls.openOnce">Open once</button>
             <small data-i18n="controls.openOnceHint">In case of error</small>
@@ -70,7 +80,9 @@
       <section class="overlay-manager" id="overlayManager" hidden>
         <div class="overlay-manager-head">
           <h2 data-i18n="overlayManager.title">Custom Overlay</h2>
-          <button id="addOverlay" class="primary-button" type="button" data-i18n="overlayManager.add">+ Add overlay</button>
+          <button id="addOverlay" class="primary-button" type="button" data-i18n="overlayManager.add">
+            + Add overlay
+          </button>
         </div>
 
         <div class="server-settings">
@@ -88,14 +100,11 @@
         <div class="overlay-list" id="overlayList"></div>
 
         <p class="overlay-help" data-i18n-html="overlayManager.help">
-          Use {maps_completed}, {anomalies}, {citadels}, {expeditions},
-          {bosses}, {deaths}, {current_location}, {last_area},
-          {character_name}.<br>
-          Selected location (click a row in "Runs by location"):
-          {selected_map_name}, {selected_map_count},
-          {selected_map_avg}, {selected_map_deaths}.<br>
-          Any location by name: {location_count:NAME},
-          {location_avg:NAME}, {location_deaths:NAME}.<br>
+          Use {maps_completed}, {anomalies}, {citadels}, {expeditions}, {bosses}, {deaths}, {current_location},
+          {last_area}, {character_name}.<br />
+          Selected location (click a row in "Runs by location"): {selected_map_name}, {selected_map_count},
+          {selected_map_avg}, {selected_map_deaths}.<br />
+          Any location by name: {location_count:NAME}, {location_avg:NAME}, {location_deaths:NAME}.<br />
           Unknown variables remain unchanged.
         </p>
       </section>
@@ -125,12 +134,19 @@
           <div class="death-head">
             <span data-i18n="summary.deaths">Deaths</span>
             <label class="death-character">
-              <input id="characterName" type="text" autocomplete="off" spellcheck="false" placeholder="Character" data-i18n-placeholder="summary.characterPlaceholder" />
+              <input
+                id="characterName"
+                type="text"
+                autocomplete="off"
+                spellcheck="false"
+                placeholder="Character"
+                data-i18n-placeholder="summary.characterPlaceholder"
+              />
             </label>
           </div>
           <strong id="deathCount">0</strong>
         </article>
-        <article style="grid-column: span 2;">
+        <article style="grid-column: span 2">
           <div class="summary-head"><span data-i18n="summary.lastArea">Last area</span></div>
           <strong id="lastArea">-</strong>
         </article>
@@ -152,10 +168,17 @@
           <button class="filter" data-filter="map" type="button" data-i18n="filter.map">Maps</button>
           <button class="filter" data-filter="anomaly" type="button" data-i18n="filter.anomaly">Anomaly</button>
           <button class="filter" data-filter="citadel" type="button" data-i18n="filter.citadel">Citadels</button>
-          <button class="filter" data-filter="expedition" type="button" data-i18n="filter.expedition">Expedition</button>
+          <button class="filter" data-filter="expedition" type="button" data-i18n="filter.expedition">
+            Expedition
+          </button>
           <button class="filter" data-filter="boss" type="button" data-i18n="filter.boss">Bosses</button>
           <button class="filter" data-filter="special" type="button" data-i18n="filter.special">Special</button>
-          <input id="searchBox" type="search" placeholder="Search by name" data-i18n-placeholder="filter.searchPlaceholder" />
+          <input
+            id="searchBox"
+            type="search"
+            placeholder="Search by name"
+            data-i18n-placeholder="filter.searchPlaceholder"
+          />
         </aside>
 
         <section class="table-area">
@@ -177,7 +200,9 @@
                 </tr>
               </thead>
               <tbody id="historyBody">
-                <tr><td colspan="7" class="empty" data-i18n="table.empty">Open Client.txt to start analysis.</td></tr>
+                <tr>
+                  <td colspan="7" class="empty" data-i18n="table.empty">Open Client.txt to start analysis.</td>
+                </tr>
               </tbody>
             </table>
           </div>
@@ -185,7 +210,6 @@
       </section>
     </main>
 
-    <script src="./locations.js?v=20260624-11"></script>
-    <script src="./app.js?v=20260626-13"></script>
+    <script src="./bundle.js"></script>
   </body>
 </html>

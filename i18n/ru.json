@@ -121,5 +121,7 @@
   "summary.boss": "Босс / особое",
   "summary.deaths": "Смерти",
   "summary.lastArea": "Последняя зона",
-  "summary.characterPlaceholder": "Персонаж"
+  "summary.characterPlaceholder": "Персонаж",
+  "duration.hours": "{hours}ч {minutes}мин",
+  "duration.minutes": "{minutes}мин {seconds}с"
 }

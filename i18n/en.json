@@ -121,5 +121,7 @@
   "summary.boss": "Boss / special",
   "summary.deaths": "Deaths",
   "summary.lastArea": "Last area",
-  "summary.characterPlaceholder": "Character"
+  "summary.characterPlaceholder": "Character",
+  "duration.hours": "{hours}h {minutesPadded}m",
+  "duration.minutes": "{minutes}m {secondsPadded}s"
 }
