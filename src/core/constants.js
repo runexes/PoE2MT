@@ -17,6 +17,19 @@ export const DEFAULT_LANGUAGE = "en";
 
 export const DEFAULT_TEMPLATE = ["Simulacrum: {location_count:Simulacrum of Delusion}", "Voices: 0"].join("\n");
 
-export const OVERLAY_ID_PATTERN = /^[A-Za-z0-9._-]{1,64}$/;
+export const OVERLAY_ID_MAX_LENGTH = 64;
+export const OVERLAY_ID_FORBIDDEN_PATTERN = /[/\\]/;
+
+export function isValidOverlayId(value) {
+  const id = String(value);
+  if (!id || id === "." || id === "..") return false;
+  if (id.length > OVERLAY_ID_MAX_LENGTH) return false;
+  if (OVERLAY_ID_FORBIDDEN_PATTERN.test(id)) return false;
+  for (const char of id) {
+    const code = char.codePointAt(0);
+    if (code < 0x20 || code === 0x7f) return false;
+  }
+  return true;
+}
 
 export const isElectron = Boolean(window.statsServer);

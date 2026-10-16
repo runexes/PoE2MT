@@ -1,16 +1,19 @@
-import { DEFAULT_TEMPLATE, OVERLAY_ID_PATTERN } from "../core/constants.js";
+import { DEFAULT_TEMPLATE, isValidOverlayId } from "../core/constants.js";
 import { state } from "../core/state.js";
 import { els } from "../core/dom.js";
 import { t } from "../core/i18n.js";
 import { formatDuration } from "../core/duration.js";
 import { isHiddenRecord } from "../data/classification.js";
 import { copyToClipboard, escapeHtml, normalize } from "../core/utils.js";
+import { publishOverlay } from "./overlay-sinks.js";
 
 export let overlays = [];
 export let overlayManagerOpen = false;
 
 let serverRunning = false;
 let configSaveTimer = null;
+
+const LOCAL_CONFIG_KEY = "poe2-map-tracker-overlays";
 
 const DYNAMIC_VARIABLE_TARGETS = {
   location_count: "selected_map_count",
@@ -26,7 +29,7 @@ export function renderOverlays() {
     const card = els.overlayList.querySelector(`.overlay-card[data-index="${index}"]`);
     const preview = card?.querySelector(".overlay-preview");
     if (preview) preview.textContent = overlay.rendered;
-    window.statsServer?.publish({
+    publishOverlay({
       overlayId: overlay.id,
       text: overlay.rendered,
       variables
@@ -34,7 +37,7 @@ export function renderOverlays() {
   });
 }
 
-function publishOverlay(index) {
+function publishOverlayIndex(index) {
   const overlay = overlays[index];
   if (!overlay) return;
 
@@ -45,7 +48,7 @@ function publishOverlay(index) {
   const preview = card?.querySelector(".overlay-preview");
   if (preview) preview.textContent = overlay.rendered;
 
-  window.statsServer?.publish({
+  publishOverlay({
     overlayId: overlay.id,
     text: overlay.rendered,
     variables
@@ -58,7 +61,6 @@ export function renderOverlayList() {
     const card = document.createElement("div");
     card.className = "overlay-card";
     card.dataset.index = String(index);
-    const url = overlayUrl(overlay.id);
     card.innerHTML = [
       '<div class="overlay-card-head">',
       '<label class="field"><span>ID</span>',
@@ -72,16 +74,29 @@ export function renderOverlayList() {
         escapeHtml(t("overlay.remove")) +
         '">X</button>',
       "</div>",
+      '<p class="overlay-id-note" hidden></p>',
       `<textarea class="overlay-template" rows="5" spellcheck="false" aria-label="${escapeHtml(
         t("overlay.templateLabel")
       )}">${escapeHtml(overlay.template)}</textarea>`,
-      `<button class="overlay-url" type="button" data-url="${escapeHtml(
-        url
-      )}" title="${escapeHtml(t("overlay.copyLink"))}">${escapeHtml(url)}</button>`,
+      renderOverlayTarget(overlay.id),
       `<pre class="overlay-preview">${escapeHtml(overlay.rendered)}</pre>`
     ].join("");
     els.overlayList.appendChild(card);
   });
+}
+
+function renderOverlayTarget(overlayId) {
+  const source = `<span class="overlay-source" title="${escapeHtml(t("obs.help"))}">${escapeHtml(
+    t("obs.sourceName")
+  )}: ${escapeHtml(overlayId)}</span>`;
+  if (!window.statsServer) return source;
+  const url = overlayUrl(overlayId);
+  return [
+    `<button class="overlay-url" type="button" data-url="${escapeHtml(
+      url
+    )}" title="${escapeHtml(t("overlay.copyLink"))}">${escapeHtml(url)}</button>`,
+    source
+  ].join("");
 }
 
 export function addOverlay() {
@@ -120,7 +135,7 @@ export function handleOverlayInput(event) {
   const index = Number(card.dataset.index);
   if (!overlays[index]) return;
   overlays[index].template = field.value;
-  publishOverlay(index);
+  publishOverlayIndex(index);
   scheduleConfigSave();
 }
 
@@ -135,14 +150,12 @@ export function handleOverlayChange(event) {
   const nextId = field.value.trim();
   if (!isValidOverlayId(nextId)) {
     field.value = overlay.id;
-    els.serverStatus.textContent = t("server.idInvalid");
-    setServerStatusError(true);
+    showOverlayIdNote(card, field, t("server.idInvalid"));
     return;
   }
   if (overlays.some((item, itemIndex) => itemIndex !== index && item.id === nextId)) {
     field.value = overlay.id;
-    els.serverStatus.textContent = t("server.idDuplicate");
-    setServerStatusError(true);
+    showOverlayIdNote(card, field, t("server.idDuplicate"));
     return;
   }
 
@@ -150,6 +163,16 @@ export function handleOverlayChange(event) {
   renderOverlayList();
   persistConfig();
   renderOverlays();
+}
+
+function showOverlayIdNote(card, field, message) {
+  const note = card.querySelector(".overlay-id-note");
+  if (note) {
+    note.textContent = message;
+    note.hidden = false;
+  }
+  field.setAttribute("aria-invalid", "true");
+  field.classList.add("overlay-id-invalid");
 }
 
 export function handleOverlayClick(event) {
@@ -171,9 +194,13 @@ export function handleOverlayClick(event) {
 }
 
 export function initStatsServer() {
-  if (!window.statsServer) {
-    els.streamToggle.hidden = true;
-    if (els.overlayManager) els.overlayManager.hidden = true;
+  const hasElectron = Boolean(window.statsServer);
+  els.serverSettings.hidden = !hasElectron;
+  els.obsSettings.hidden = hasElectron;
+
+  if (!hasElectron) {
+    applyLocalConfig();
+    renderOverlayList();
     return Promise.resolve();
   }
 
@@ -196,6 +223,41 @@ export function initStatsServer() {
       els.serverStatus.textContent = t("server.configReadError");
       setServerStatusError(true);
     });
+}
+
+function readLocalConfig() {
+  try {
+    return JSON.parse(localStorage.getItem(LOCAL_CONFIG_KEY) || "null");
+  } catch {
+    return null;
+  }
+}
+
+function applyLocalConfig() {
+  const saved = readLocalConfig();
+  if (!saved) return;
+  overlayManagerOpen = Boolean(saved.overlayManagerOpen);
+  overlays = (Array.isArray(saved.overlays) ? saved.overlays : [])
+    .filter((overlay) => overlay && isValidOverlayId(String(overlay.id || "").trim()))
+    .map((overlay) => ({
+      id: String(overlay.id),
+      template: String(overlay.template || ""),
+      rendered: ""
+    }));
+}
+
+function saveLocalConfig() {
+  try {
+    localStorage.setItem(
+      LOCAL_CONFIG_KEY,
+      JSON.stringify({
+        overlayManagerOpen,
+        overlays: overlays.map((overlay) => ({ id: overlay.id, template: overlay.template }))
+      })
+    );
+  } catch {
+    // storage may be unavailable; overlays stay session-only
+  }
 }
 
 export function applyServerInfo(info) {
@@ -225,7 +287,10 @@ export function applyServerInfo(info) {
 
 export function persistConfig() {
   clearTimeout(configSaveTimer);
-  if (!window.statsServer) return Promise.resolve();
+  if (!window.statsServer) {
+    saveLocalConfig();
+    return Promise.resolve();
+  }
 
   const config = {
     port: Number(els.statsPort.value),
@@ -259,10 +324,6 @@ export function toggleServer() {
     els.serverStatus.textContent = t("server.controlError");
     setServerStatusError(true);
   });
-}
-
-function isValidOverlayId(value) {
-  return OVERLAY_ID_PATTERN.test(value);
 }
 
 function setServerStatusError(isError) {

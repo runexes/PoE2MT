@@ -41,6 +41,14 @@ export const els = {
   autoStart: document.getElementById("autoStart"),
   serverStart: document.getElementById("serverStart"),
   serverStatus: document.getElementById("serverStatus"),
+  serverSettings: document.getElementById("serverSettings"),
+  obsSettings: document.querySelector(".obs-settings"),
+  obsHost: document.getElementById("obsHost"),
+  obsPort: document.getElementById("obsPort"),
+  obsPassword: document.getElementById("obsPassword"),
+  obsAutoConnect: document.getElementById("obsAutoConnect"),
+  obsToggle: document.getElementById("obsToggle"),
+  obsStatus: document.getElementById("obsStatus"),
   langToggle: document.getElementById("langToggle")
 };
 

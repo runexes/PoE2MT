@@ -1,12 +1,14 @@
 const { ipcMain, dialog } = require("electron");
 const fs = require("fs");
 const {
-  OVERLAY_ID_PATTERN,
+  isValidOverlayId,
   activeLanguage,
+  activeObsConfig,
   defaultConfig,
   getActiveConfig,
   saveConfig,
   setActiveConfig,
+  setObsConfig,
   validateConfig
 } = require("./store");
 const { guessLanguage, loadMessages, translate } = require("./i18n");
@@ -32,7 +34,8 @@ function buildResponse() {
       overlays: config.overlays.map((overlay) => ({
         id: overlay.id,
         template: overlay.template
-      }))
+      })),
+      obs: config.obs || activeObsConfig()
     },
     running: status.running,
     urls,
@@ -44,7 +47,7 @@ function registerIpcHandlers() {
   ipcMain.on("stats:update", (event, payload) => {
     if (!payload || typeof payload.text !== "string") return;
     const overlayId = String(payload.overlayId || "").trim();
-    if (!OVERLAY_ID_PATTERN.test(overlayId)) return;
+    if (!isValidOverlayId(overlayId)) return;
     updateOverlay({
       overlayId,
       text: payload.text,
@@ -71,6 +74,11 @@ function registerIpcHandlers() {
       stopServer();
       await startServer(validation.config);
     }
+    return buildResponse();
+  });
+
+  ipcMain.handle("obs:config:set", (event, candidate) => {
+    setObsConfig(candidate);
     return buildResponse();
   });
 

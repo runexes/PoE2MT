@@ -746,6 +746,10 @@ td small {
   border-bottom: 1px solid var(--line);
 }
 
+.obs-settings .field:first-of-type input {
+  min-width: 160px;
+}
+
 .field {
   min-height: 42px;
   display: inline-flex;
@@ -876,6 +880,27 @@ td small {
 
 .overlay-url:hover {
   border-color: var(--accent-2);
+}
+
+.overlay-source {
+  display: block;
+  margin-top: 10px;
+  color: var(--muted);
+  font-family: Menlo, Consolas, "Courier New", monospace;
+  font-size: 12px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.overlay-id-note {
+  margin: 8px 0 0;
+  color: var(--danger);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.overlay-id-invalid {
+  border-color: var(--danger);
 }
 
 .overlay-url-done,

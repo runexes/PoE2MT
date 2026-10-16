@@ -11,7 +11,7 @@ export function render() {
   if (!hasLog) els.watchStatus.textContent = t("watch.noFile");
   els.setupGuide.hidden = hasLog;
   els.summaryGrid.hidden = !hasLog;
-  const showOverlayToggle = hasLog && Boolean(window.statsServer);
+  const showOverlayToggle = hasLog;
   applyOverlayManagerState(showOverlayToggle);
   els.statsBand.hidden = !hasLog;
   els.workspace.hidden = !hasLog;

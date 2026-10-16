@@ -20,12 +20,13 @@ import {
 } from "./ui/overlays.js";
 import { applyLocationFilter, refreshListView, syncFilterButtons } from "./ui/summary.js";
 import { handleTableScroll, resetVisibleRows } from "./ui/table.js";
+import { initObsPanel, persistObsPanelSettings, toggleObsConnection, updateObsStatusText } from "./ui/obs-panel.js";
 import { render, renderStatsState } from "./ui/render.js";
 
 async function init() {
   wireEvents();
   await initI18n();
-  await Promise.all([initStatsServer(), restoreSavedState()]);
+  await Promise.all([initStatsServer(), restoreSavedState(), initObsPanel()]);
   applyTranslations();
   updateLangToggle();
   render();
@@ -87,6 +88,11 @@ function wireEvents() {
   els.overlayList.addEventListener("input", handleOverlayInput);
   els.overlayList.addEventListener("change", handleOverlayChange);
   els.overlayList.addEventListener("click", handleOverlayClick);
+  els.obsToggle.addEventListener("click", toggleObsConnection);
+  els.obsHost.addEventListener("change", persistObsPanelSettings);
+  els.obsPort.addEventListener("change", persistObsPanelSettings);
+  els.obsPassword.addEventListener("change", persistObsPanelSettings);
+  els.obsAutoConnect.addEventListener("change", persistObsPanelSettings);
 }
 
 function handlePointerDown(event) {
@@ -127,6 +133,7 @@ async function setLanguage(language) {
   }
   applyTranslations();
   updateLangToggle();
+  updateObsStatusText();
   if (overlayManagerOpen) renderOverlayList();
   render();
 }

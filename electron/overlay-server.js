@@ -2,12 +2,12 @@ const http = require("http");
 const fs = require("fs");
 const path = require("path");
 const { translate } = require("./i18n");
-const { activeLanguage } = require("./store");
+const { activeLanguage, isValidOverlayId } = require("./store");
 
 const OVERLAY_HTML = fs.readFileSync(path.join(__dirname, "overlay.html"), "utf8");
 
-const OVERLAY_ROUTE_PATTERN = /^\/overlays\/map\/([A-Za-z0-9._-]{1,64})$/;
-const OVERLAY_EVENTS_PATTERN = /^\/overlays\/map\/([A-Za-z0-9._-]{1,64})\/events$/;
+const OVERLAY_ROUTE_PATTERN = /^\/overlays\/map\/([^/]+)$/;
+const OVERLAY_EVENTS_PATTERN = /^\/overlays\/map\/([^/]+)\/events$/;
 const HEARTBEAT_MS = 20000;
 
 let server = null;
@@ -28,6 +28,16 @@ function overlayHtml(overlayId) {
 
 function sendEvent(res, payload) {
   res.write(`data: ${JSON.stringify(payload)}\n\n`);
+}
+
+function decodeOverlayId(segment) {
+  let decoded;
+  try {
+    decoded = decodeURIComponent(segment);
+  } catch {
+    return null;
+  }
+  return isValidOverlayId(decoded) ? decoded : null;
 }
 
 function broadcast(overlayId) {
@@ -54,18 +64,19 @@ function handleRequest(req, res) {
   }
 
   const pageMatch = requestPath.match(OVERLAY_ROUTE_PATTERN);
-  if (pageMatch) {
+  const pageId = pageMatch ? decodeOverlayId(pageMatch[1]) : null;
+  if (pageId) {
     res.writeHead(200, {
       "Content-Type": "text/html; charset=utf-8",
       "Cache-Control": "no-store"
     });
-    res.end(overlayHtml(pageMatch[1]));
+    res.end(overlayHtml(pageId));
     return;
   }
 
   const eventsMatch = requestPath.match(OVERLAY_EVENTS_PATTERN);
-  if (eventsMatch) {
-    const overlayId = eventsMatch[1];
+  const overlayId = eventsMatch ? decodeOverlayId(eventsMatch[1]) : null;
+  if (overlayId) {
     res.writeHead(200, {
       "Content-Type": "text/event-stream",
       "Cache-Control": "no-cache",

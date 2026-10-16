@@ -20,7 +20,13 @@ Parsed data is stored locally and restored on the next launch, so you do not sta
 
 ### Stream overlays
 
-Open `Stream Overlay` from the top bar to manage overlays. Each overlay gets a local URL (for example `http://localhost:8080/overlays/map/map-1`) that you can add as a browser source in OBS. The overlay page updates live over Server-Sent Events.
+Open `Stream Overlay` from the top bar to manage overlays. Each overlay gets a local URL (for example `http://localhost:8080/overlays/map/map-1`) that you can add as a browser source in OBS. The overlay page updates live over Server-Sent Events. This needs the built-in HTTP server, so it is only available in the Electron build.
+
+### OBS WebSocket overlays
+
+The same overlay manager can push overlay text straight into OBS over obs-websocket v5 (built into OBS 28+, default `127.0.0.1:4455`). Create a **Text** source in OBS named exactly like the overlay ID (for example `map-1`), enable the WebSocket server in OBS (`Tools -> WebSocket Server Settings`) and connect from the `OBS WebSocket` section. The tracker writes the rendered text of that overlay into the source; the page must stay open while you play.
+
+This transport works without Electron, so `npm run serve` plus OBS is enough to run the tracker in a browser. Host, port, password and auto-connect are stored in the Electron config file, or in `localStorage` when running in a browser. The password is kept in plaintext because it is a local-only credential.
 
 ## Log file location
 
@@ -98,7 +104,8 @@ src/                 renderer (ES modules, bundled by esbuild)
   core/              constants, state, utils, dom, i18n
   data/              locations.data, classification
   log/               file-source, file-picker, handle-store, scanner, parser
-  ui/                overlays, render, summary, table, labels
+  obs/               protocol, client, settings (obs-websocket v5 sink)
+  ui/                overlays, overlay-sinks, obs-panel, render, summary, table, labels
 
 i18n/                en.json, ru.json (bundled into the renderer, also read by the overlay server)
 scripts/             serve.js (browser dev server for src/index.html)
