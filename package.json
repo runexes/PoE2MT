@@ -1,6 +1,6 @@
 {
   "name": "poe2mt-app",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Electron desktop tracker for Path of Exile 2 map runs.",
   "license": "MIT",
   "author": "runexes (https://github.com/runexes)",

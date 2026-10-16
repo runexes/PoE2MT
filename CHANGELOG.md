@@ -10,6 +10,30 @@ Entries below cover changes made in this fork; the original project history is k
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-10-16
+
+Bring back browser usage and add an OBS WebSocket overlay transport.
+
+### Added
+
+- OBS WebSocket (`obs-websocket` v5) overlay sink: rendered overlay text is pushed into OBS Text sources named after the overlay id. Works in both the Electron build and the browser.
+- OBS connection panel with host, port, password, connect-on-launch and live connection status.
+- Browser usage restored: `npm run serve` (and `make serve`) starts a local static server so the app runs without Electron.
+- GitHub Pages workflow that builds the browser app and deploys it on `v*` tags.
+- File access permission is re-requested on the next user gesture in the browser when it cannot be restored silently.
+
+### Changed
+
+- Overlay ids may now contain spaces and non-ASCII characters, since they also name the OBS source. Validation is shared by the renderer, the config store and the overlay HTTP routes.
+- The overlay manager is available without Electron and persists its state to `localStorage`.
+- The settings section is mode-specific: Electron shows the HTTP overlay server settings, the browser shows the OBS WebSocket settings.
+- Localization falls back to bundled JSON when the Electron bridge is unavailable.
+- README documents browser usage, the OBS sink and the file-access permission caveat.
+
+### Fixed
+
+- Renaming an overlay id to a value with spaces or non-ASCII characters silently reverted to `map-1`. Invalid ids are now rejected with a visible inline message.
+
 ## [0.1.0] - 2026-10-13
 
 First release of the Electron desktop fork.
@@ -35,5 +59,6 @@ First release of the Electron desktop fork.
 
 - Browser and `file://` usage; the app now requires Electron.
 
-[Unreleased]: https://github.com/runexes/PoE2MT/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/runexes/PoE2MT/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/runexes/PoE2MT/releases/tag/v0.2.0
 [0.1.0]: https://github.com/runexes/PoE2MT/releases/tag/v0.1.0
