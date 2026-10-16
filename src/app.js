@@ -1,10 +1,10 @@
 import { DEFAULT_START_DATE } from "./core/constants.js";
 import { clearLocalState, saveLocalState, state } from "./core/state.js";
 import { els, setProgress } from "./core/dom.js";
-import { applyTranslations, fetchMessages, initI18n, t, updateLangToggle } from "./core/i18n.js";
+import { applyTranslations, fetchMessages, initI18n, saveLocalLanguage, t, updateLangToggle } from "./core/i18n.js";
 import { normalizeCharacterName, normalizeSearch } from "./core/utils.js";
 import { chooseFallbackFile, chooseNativeFile, openFallbackPicker } from "./log/file-picker.js";
-import { fullScan, stopPolling, restoreSavedState, toggleRealtime } from "./log/scanner.js";
+import { fullScan, stopPolling, restoreSavedState, resumePendingAccess, toggleRealtime } from "./log/scanner.js";
 import { deleteHandle } from "./log/handle-store.js";
 import {
   addOverlay,
@@ -32,6 +32,7 @@ async function init() {
 }
 
 function wireEvents() {
+  document.addEventListener("pointerdown", handlePointerDown);
   els.nativePicker.addEventListener("click", chooseNativeFile);
   els.fallbackButton.addEventListener("click", openFallbackPicker);
   els.fallbackPicker.addEventListener("change", chooseFallbackFile);
@@ -88,6 +89,11 @@ function wireEvents() {
   els.overlayList.addEventListener("click", handleOverlayClick);
 }
 
+function handlePointerDown(event) {
+  if (els.nativePicker.contains(event.target) || els.fallbackButton.contains(event.target)) return;
+  resumePendingAccess();
+}
+
 function openDatePicker(event) {
   if (event.target === els.startDate) return;
   els.startDate.focus();
@@ -110,6 +116,7 @@ function toggleLanguage() {
 async function setLanguage(language) {
   state.language = language;
   updateLangToggle();
+  saveLocalLanguage(language);
   try {
     await persistConfig();
     const info = await fetchMessages(language);

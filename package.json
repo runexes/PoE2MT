@@ -29,6 +29,7 @@
   "scripts": {
     "build": "esbuild src/app.js --bundle --format=iife --target=es2022 --outfile=src/bundle.js",
     "build:watch": "npm run build -- --watch",
+    "serve": "node scripts/serve.js",
     "start": "npm run build && electron .",
     "pack": "npm run build && electron-builder --dir",
     "dist": "npm run build && electron-builder --publish never",

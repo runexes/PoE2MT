@@ -64,6 +64,7 @@ npm install      # install dependencies
 npm start        # build the renderer bundle and launch Electron
 npm run build    # build the renderer bundle only (src/bundle.js)
 npm run build:watch  # rebuild the bundle on change (pair with a restarted Electron)
+npm run serve    # serve the renderer over a local Node.js server on http://127.0.0.1:8080
 
 npm run lint     # ESLint over src/ and electron/
 npm run format   # Prettier --write over the project
@@ -75,9 +76,11 @@ npm run dist:win # Windows installer
 npm run dist:mac # macOS dmg
 ```
 
-The `Makefile` exposes the same commands: `make start`, `make dev`, `make build`, `make lint`, `make format`, `make format-check`, `make test`, `make pack`, `make dist-win`, `make dist-mac`.
+The `Makefile` exposes the same commands: `make start`, `make dev`, `make build`, `make serve`, `make lint`, `make format`, `make format-check`, `make test`, `make pack`, `make dist-win`, `make dist-mac`.
 
 > `npm start` and all `dist*`/`pack` targets run the renderer build first, so `src/bundle.js` is always up to date.
+
+`npm run serve` starts a plain Node.js static server (no Electron) that serves the renderer at `http://127.0.0.1:8080/` (root-level assets are mapped to `src/`, `i18n/` is served as well). Set `PORT` or `HOST` to override. Overlay-server features stay unavailable there because there is no `window.statsServer`, but the UI, log scanning and translations work; the language choice is kept in `localStorage` instead of the Electron config. In the browser, log access comes from the File System Access API: after a reload the stored file needs one click in the page to re-grant read permission, which browsers only allow from a user gesture.
 
 ## Project layout
 
@@ -97,7 +100,8 @@ src/                 renderer (ES modules, bundled by esbuild)
   log/               file-source, file-picker, handle-store, scanner, parser
   ui/                overlays, render, summary, table, labels
 
-i18n/                en.json, ru.json
+i18n/                en.json, ru.json (bundled into the renderer, also read by the overlay server)
+scripts/             serve.js (browser dev server for src/index.html)
 tests/               node:test unit tests
 ```
 

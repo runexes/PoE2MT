@@ -15,6 +15,7 @@ import { parseLines, recalculateDurations, recalculateRunCounts } from "./parser
 import { collectRecordDeaths, isOnOrAfterStartDate, lineDate, normalizeCharacterName } from "../core/utils.js";
 import { RemoteClientFile } from "./file-source.js";
 import { deleteHandle, readHandle } from "./handle-store.js";
+import { hasReadPermission } from "./permissions.js";
 import { render, renderRealtimeToggle } from "../ui/render.js";
 import { resetVisibleRows } from "../ui/table.js";
 
@@ -22,10 +23,11 @@ export function isStale(generation) {
   return generation !== state.generation;
 }
 
+let pendingRestore = null;
+
 export async function currentFile() {
   if (state.fileHandle) {
-    const permission = await state.fileHandle.requestPermission({ mode: "read" });
-    if (permission !== "granted") {
+    if (!(await hasReadPermission(state.fileHandle))) {
       els.watchStatus.textContent = t("watch.noAccess");
       return null;
     }
@@ -36,6 +38,7 @@ export async function currentFile() {
 }
 
 export async function loadFile(file, handle, scanNow) {
+  pendingRestore = null;
   state.generation += 1;
   const generation = state.generation;
   if (!handle) {
@@ -223,7 +226,9 @@ export function toggleRealtime() {
   state.realtime = !state.realtime;
   if (state.realtime && state.fileHandle) {
     startPolling();
-    pollFile();
+    pollFile().catch(() => {
+      els.watchStatus.textContent = t("watch.waitingAccess");
+    });
   } else {
     stopPolling();
     els.watchStatus.textContent = state.fileHandle ? t("watch.realtimeDisabled") : t("watch.noFile");
@@ -265,26 +270,36 @@ export async function restoreSavedState() {
   if (!handle) return;
 
   state.fileHandle = handle;
-  const permission = handle.requestPermission
-    ? await handle.requestPermission({ mode: "read" })
-    : await handle.queryPermission({ mode: "read" });
-  if (permission === "granted") {
-    try {
-      const file = await handle.getFile();
-      await loadFile(file, handle, false);
-      if (needsMigrationScan) {
-        await fullScan();
-      } else if (savedLastSize > 0 && file.size > savedLastSize) {
-        state.lastSize = savedLastSize;
-        await pollFile();
-      }
-      if (state.realtime) startPolling();
-    } catch {
-      state.fileHandle = null;
-      await deleteHandle();
-      els.watchStatus.textContent = t("watch.reopenLog");
-    }
-  } else {
+  if (!(await hasReadPermission(handle))) {
+    pendingRestore = { handle, savedLastSize, needsMigrationScan };
     els.watchStatus.textContent = t("watch.allowAccess");
+    return;
   }
+  await loadRestoredHandle(handle, savedLastSize, needsMigrationScan);
+}
+
+async function loadRestoredHandle(handle, savedLastSize, needsMigrationScan) {
+  try {
+    const file = await handle.getFile();
+    await loadFile(file, handle, false);
+    if (needsMigrationScan) {
+      await fullScan();
+    } else if (savedLastSize > 0 && file.size > savedLastSize) {
+      state.lastSize = savedLastSize;
+      await pollFile();
+    }
+    if (state.realtime) startPolling();
+  } catch {
+    state.fileHandle = null;
+    await deleteHandle();
+    els.watchStatus.textContent = t("watch.reopenLog");
+  }
+}
+
+export async function resumePendingAccess() {
+  if (!pendingRestore) return;
+  const { handle, savedLastSize, needsMigrationScan } = pendingRestore;
+  if (!(await hasReadPermission(handle, { request: true }))) return;
+  pendingRestore = null;
+  await loadRestoredHandle(handle, savedLastSize, needsMigrationScan);
 }

@@ -1,6 +1,6 @@
 NPM  := npm
 
-.PHONY: install start dev build lint format format-check test pack dist-win dist-mac
+.PHONY: install start dev build serve lint format format-check test pack dist-win dist-mac
 
 install:
 	$(NPM) install
@@ -13,6 +13,9 @@ dev:
 
 build:
 	$(NPM) run build
+
+serve:
+	$(NPM) run serve
 
 lint:
 	$(NPM) run lint

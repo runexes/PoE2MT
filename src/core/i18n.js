@@ -1,6 +1,12 @@
 import { DEFAULT_LANGUAGE } from "./constants.js";
 import { state } from "./state.js";
 import { els } from "./dom.js";
+import en from "../../i18n/en.json";
+import ru from "../../i18n/ru.json";
+
+const CATALOGS = { en, ru };
+const SUPPORTED_LANGUAGES = ["en", "ru"];
+const LANGUAGE_STORAGE_KEY = "poe2-map-tracker-language";
 
 export function t(key, params) {
   const template = state.messages?.[key];
@@ -34,23 +40,58 @@ export function updateLangToggle() {
   els.langToggle.textContent = state.language === "ru" ? "RU" : "EN";
 }
 
-export async function fetchMessages(language) {
-  if (!window.statsServer?.i18nGet) {
-    return { language: language || DEFAULT_LANGUAGE, messages: {} };
-  }
+export function saveLocalLanguage(language) {
+  if (!SUPPORTED_LANGUAGES.includes(language)) return;
   try {
-    const info = await window.statsServer.i18nGet();
-    return {
-      language: info?.language || language || DEFAULT_LANGUAGE,
-      messages: info?.messages || {}
-    };
+    localStorage.setItem(LANGUAGE_STORAGE_KEY, language);
   } catch {
-    return { language: language || DEFAULT_LANGUAGE, messages: {} };
+    // storage may be unavailable (private mode); language falls back to detection
   }
 }
 
+function readLocalLanguage() {
+  try {
+    const stored = localStorage.getItem(LANGUAGE_STORAGE_KEY);
+    return SUPPORTED_LANGUAGES.includes(stored) ? stored : null;
+  } catch {
+    return null;
+  }
+}
+
+function guessLanguage() {
+  const stored = readLocalLanguage();
+  if (stored) return stored;
+  const locale = typeof navigator !== "undefined" ? navigator.language || "" : "";
+  return locale.toLowerCase().startsWith("ru") ? "ru" : DEFAULT_LANGUAGE;
+}
+
+function loadLocalMessages(language) {
+  const fallback = CATALOGS[DEFAULT_LANGUAGE] || {};
+  if (!CATALOGS[language]) return fallback;
+  if (language === DEFAULT_LANGUAGE) return fallback;
+  return { ...fallback, ...CATALOGS[language] };
+}
+
+export async function fetchMessages(language) {
+  if (window.statsServer?.i18nGet) {
+    try {
+      const info = await window.statsServer.i18nGet();
+      if (info?.messages) {
+        return {
+          language: info.language || language || DEFAULT_LANGUAGE,
+          messages: info.messages
+        };
+      }
+    } catch {
+      // fall through to the bundled catalogs
+    }
+  }
+  const selected = language || guessLanguage();
+  return { language: selected, messages: loadLocalMessages(selected) };
+}
+
 export async function initI18n() {
-  const info = await fetchMessages(DEFAULT_LANGUAGE);
+  const info = await fetchMessages(null);
   state.language = info.language;
   state.messages = info.messages;
 }
