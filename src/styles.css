@@ -94,11 +94,15 @@ button {
   border-radius: 8px;
 }
 
+.center-960 {
+  max-width: 960px;
+  margin: 0 auto 16px;
+}
+
 .setup-guide {
   display: grid;
   grid-template-columns: minmax(0, 1.15fr) minmax(320px, 0.85fr);
   gap: 28px;
-  margin-bottom: 16px;
   padding: 28px;
   position: relative;
   overflow: hidden;
@@ -200,9 +204,57 @@ button {
   line-height: 1.4;
 }
 
+.setup-pathhint {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 18px 28px;
+}
+
+.setup-pathhint-title {
+  margin: 0 0 10px;
+  color: var(--accent);
+  font-size: clamp(12px, 2vw, 19px);
+  line-height: 1.08;
+  font-weight: 700;
+}
+
+.setup-pathhint-list,
+.setup-pathhint-sublist {
+  margin: 0;
+  padding-left: 20px;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.6;
+  display: grid;
+  gap: 8px;
+}
+
+.setup-pathhint-sublist {
+  margin-top: 6px;
+  gap: 6px;
+}
+
+.setup-pathhint code {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.setup-pathhint-list code {
+  display: block;
+  margin-top: 4px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel-2);
+  color: var(--text);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
 .control-band {
   display: grid;
-  grid-template-columns: minmax(280px, 640px) 1fr;
+  grid-template-columns: minmax(280px, 670px) 1fr;
   gap: 18px;
   padding: 18px;
 }
@@ -654,6 +706,31 @@ td small {
 @media (max-width: 860px) {
   .app-shell {
     padding: 14px;
+  }
+
+  .setup-guide {
+    padding: 18px;
+    gap: 18px;
+  }
+
+  .setup-pathhint {
+    padding: 18px;
+  }
+
+  .setup-pathhint-list {
+    padding-left: 18px;
+    font-size: 13px;
+    gap: 12px;
+  }
+
+  .setup-pathhint-sublist {
+    padding-left: 16px;
+    gap: 8px;
+  }
+
+  .setup-pathhint code {
+    font-size: 12px;
+    padding: 7px 8px;
   }
 
   .topbar,

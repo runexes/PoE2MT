@@ -10,6 +10,7 @@ export function render() {
   els.fileName.textContent = state.fileName || t("controls.noLog");
   if (!hasLog) els.watchStatus.textContent = t("watch.noFile");
   els.setupGuide.hidden = hasLog;
+  els.setupPathhint.hidden = hasLog;
   els.summaryGrid.hidden = !hasLog;
   const showOverlayToggle = hasLog;
   applyOverlayManagerState(showOverlayToggle);

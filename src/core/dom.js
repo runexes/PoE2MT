@@ -12,6 +12,7 @@ export const els = {
   characterName: document.getElementById("characterName"),
   watchStatus: document.getElementById("watchStatus"),
   setupGuide: document.getElementById("setupGuide"),
+  setupPathhint: document.getElementById("setupPathhint"),
   fileName: document.getElementById("fileName"),
   scanMeta: document.getElementById("scanMeta"),
   progressBar: document.getElementById("progressBar"),

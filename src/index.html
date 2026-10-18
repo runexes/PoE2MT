@@ -22,7 +22,7 @@
         </div>
       </header>
 
-      <section class="setup-guide" id="setupGuide" aria-label="First launch setup" data-i18n-aria-label="a11y.setup">
+      <section class="setup-guide center-960" id="setupGuide" aria-label="First launch setup" data-i18n-aria-label="a11y.setup">
         <div class="setup-copy">
           <p class="setup-kicker" data-i18n="setup.kicker">First launch</p>
           <h2 data-i18n="setup.title">Choose the start date before the log file</h2>
@@ -48,6 +48,22 @@
             <span data-i18n="setup.step3.body">Realtime mode will add new areas while you play.</span>
           </li>
         </ol>
+      </section>
+
+      <section class="setup-pathhint center-960" id="setupPathhint" hidden>
+        <p class="setup-pathhint-title" data-i18n="setup.pathHint.title"><strong>Where to find Client.txt</strong></p>
+        <ul class="setup-pathhint-list">
+          <li>
+            <strong data-i18n="setup.pathHint.windows">Windows:</strong>
+            <ul class="setup-pathhint-sublist">
+              <li><span data-i18n="setup.pathHint.steam">Steam:</span> <code>C:\Program Files (x86)\Steam\steamapps\common\Path of Exile 2\logs\Client.txt</code></li>
+              <li data-i18n-html="setup.pathHint.steamCustom">If Steam is installed on another drive or library folder, open that Steam library and look for: <code>steamapps\common\Path of Exile 2\logs\Client.txt</code></li>
+              <li><span data-i18n="setup.pathHint.epicgames">Epic Games:</span> <code>C:\Program Files (x86)\Epic Games\Path of Exile 2\logs\Client.txt</code></li>
+            </ul>
+          </li>
+          <li><strong data-i18n="setup.pathHint.macos">macOS (CrossOver):</strong> <code>~/Library/Application Support/CrossOver/Bottles/&lt;bottle_name&gt;/drive_c/Program Files (x86)/Steam/steamapps/common/Path of Exile 2/logs/Client.txt</code></li>
+          <li><strong data-i18n="setup.pathHint.steamDeck">Steam Deck / Linux (Proton):</strong> <code>~/.steam/steam/steamapps/compatdata/&lt;SteamAppID&gt;/pfx/drive_c/users/&lt;username&gt;/AppData/LocalLow/Grinding Gear Games/Path of Exile 2/logs/Client.txt</code></li>
+        </ul>
       </section>
 
       <section class="control-band">
@@ -79,7 +95,7 @@
 
       <section class="overlay-manager" id="overlayManager" hidden>
         <div class="overlay-manager-head">
-          <h2 data-i18n="overlayManager.title">Custom Overlay</h2>
+          <h2 data-i18n="overlayManager.title">OBS Overlay</h2>
           <button id="addOverlay" class="primary-button" type="button" data-i18n="overlayManager.add">
             + Add overlay
           </button>
@@ -119,6 +135,11 @@
           <p class="server-status" id="obsStatus">OBS not connected</p>
         </div>
 
+        <p class="overlay-help" data-i18n-html="obs.help">
+          Create a Text source in OBS named exactly like the overlay ID (for example <code>map-1</code>). The tracker
+          writes the rendered text of that overlay into the source.
+        </p>
+
         <div class="overlay-list" id="overlayList"></div>
 
         <p class="overlay-help" data-i18n-html="overlayManager.help">
@@ -128,11 +149,6 @@
           {selected_map_avg}, {selected_map_deaths}.<br />
           Any location by name: {location_count:NAME}, {location_avg:NAME}, {location_deaths:NAME}.<br />
           Unknown variables remain unchanged.
-        </p>
-
-        <p class="overlay-help" data-i18n-html="obs.help">
-          Create a Text source in OBS named exactly like the overlay ID (for example <code>map-1</code>). The tracker
-          writes the rendered text of that overlay into the source.
         </p>
       </section>
 
