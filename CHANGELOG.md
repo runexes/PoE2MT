@@ -10,6 +10,12 @@ Entries below cover changes made in this fork; the original project history is k
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-10-18
+
+### Added
+
+- "Where to find Client.txt" hint section on the first-launch screen.
+
 ## [0.2.0] - 2026-10-16
 
 Bring back browser usage and add an OBS WebSocket overlay transport.
