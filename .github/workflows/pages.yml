@@ -34,7 +34,9 @@ jobs:
       - name: Assemble site
         run: |
           mkdir -p _site
-          cp src/index.html src/styles.css src/bundle.js src/favicon.ico _site/
+          cp src/index.html src/favicon.ico _site/
+          cp src/bundle.js _site/
+          npx esbuild src/styles.css --minify --outfile=_site/styles.css
 
       - name: Configure Pages
         uses: actions/configure-pages@v6

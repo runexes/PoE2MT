@@ -27,7 +27,7 @@
   "type": "commonjs",
   "main": "electron/main.js",
   "scripts": {
-    "build": "esbuild src/app.js --bundle --format=iife --target=es2022 --outfile=src/bundle.js",
+    "build": "esbuild src/app.js --bundle --minify --format=iife --target=es2022 --outfile=src/bundle.js",
     "build:watch": "npm run build -- --watch",
     "serve": "node scripts/serve.js",
     "start": "npm run build && electron .",
@@ -36,8 +36,8 @@
     "dist:win": "npm run build && electron-builder --win --publish never",
     "dist:mac": "npm run build && electron-builder --mac --publish never",
     "lint": "eslint src electron",
-    "format": "prettier --write .",
-    "format:check": "prettier --check .",
+    "format": "prettier --write \"**/*.js\"",
+    "format:check": "prettier --check \"**/*.js\"",
     "test": "node --test"
   },
   "build": {
