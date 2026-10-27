@@ -47,6 +47,11 @@ input {
   padding: 8px 0 15px;
 }
 
+.topbar .changelog {
+  margin: 5px 0;
+  font-size: 13px;
+}
+
 .eyebrow {
   margin: 0 0 6px;
   color: var(--accent);

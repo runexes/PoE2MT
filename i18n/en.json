@@ -151,5 +151,6 @@
   "trialMaster.name": "The Trialmaster",
   "trialMaster.message": "my service is finally over",
   "raven.name": "The Raven",
-  "raven.message": "Stupid rat! What have you done? Get out!"
+  "raven.message": "Stupid rat! What have you done? Get out!",
+  "topbar.changelog": "Changelog"
 }

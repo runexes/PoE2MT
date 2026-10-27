@@ -151,5 +151,6 @@
   "trialMaster.name": "Мастер испытаний",
   "trialMaster.message": "Моё служение окончено",
   "raven.name": "Ворон",
-  "raven.message": "Глупый крысёныш! Что ты наделал? Поди прочь!"
+  "raven.message": "Глупый крысёныш! Что ты наделал? Поди прочь!",
+  "topbar.changelog": "Изменения"
 }
