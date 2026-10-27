@@ -8,7 +8,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 This project is a fork of [PoE2MT](https://github.com/igodspy/PoE2MT) by igodspy.
 Entries below cover changes made in this fork; the original project history is kept in its own repository.
 
-## [Unreleased]
+## [0.2.2] - 2026-10-28
+
+### Added
+
+- Boss records: `Client.txt` lines for The Trialmaster ("my service is finally over") and The Raven ("Stupid rat! What have you done? Get out!") are now recorded as boss records, with localized names.
+- Top bar now shows the current version and a link to the changelog.
+
+### Changed
+
+- Build output is now minified: `npm run build` passes `--minify` to esbuild; the GitHub Pages workflow minifies CSS.
+- Prettier targets `**/*.js` only; `.prettierignore` updated accordingly.
+- Persisted state version bumped to `2.0.2`, triggering a one-time full re-scan of the log after upgrade.
+
+### Security
+
+- Dependency updates via `npm audit fix`.
 
 ## [0.2.1] - 2026-10-18
 
@@ -65,6 +80,7 @@ First release of the Electron desktop fork.
 
 - Browser and `file://` usage; the app now requires Electron.
 
-[Unreleased]: https://github.com/runexes/PoE2MT/compare/v0.2.0...HEAD
+[0.2.2]: https://github.com/runexes/PoE2MT/releases/tag/v0.2.2
+[0.2.1]: https://github.com/runexes/PoE2MT/releases/tag/v0.2.1
 [0.2.0]: https://github.com/runexes/PoE2MT/releases/tag/v0.2.0
 [0.1.0]: https://github.com/runexes/PoE2MT/releases/tag/v0.1.0

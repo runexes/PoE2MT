@@ -11,7 +11,7 @@ export const HANDLE_KEY = "fileHandle";
 export const STATE_STORAGE_KEY = "poe2-map-tracker-state";
 
 export const REQUIRED_LOG_FILE = "Client.txt";
-export const STATE_VERSION = 12;
+export const STATE_VERSION = "2.0.2";
 export const DEFAULT_START_DATE = "2026-09-04";
 export const DEFAULT_LANGUAGE = "en";
 
