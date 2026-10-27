@@ -147,5 +147,9 @@
   "summary.lastArea": "Последняя зона",
   "summary.characterPlaceholder": "Персонаж",
   "duration.hours": "{hours}ч {minutes}мин",
-  "duration.minutes": "{minutes}мин {seconds}с"
+  "duration.minutes": "{minutes}мин {seconds}с",
+  "trialMaster.name": "Мастер испытаний",
+  "trialMaster.message": "Моё служение окончено",
+  "raven.name": "Ворон",
+  "raven.message": "Глупый крысёныш! Что ты наделал? Поди прочь!"
 }

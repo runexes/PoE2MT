@@ -39,6 +39,10 @@ export function escapeHtml(value) {
   );
 }
 
+export function escapeRegex(value) {
+  return String(value || "").replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
 export function parseTime(value) {
   return value.replace(/\//g, "-");
 }

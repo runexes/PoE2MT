@@ -1,12 +1,39 @@
 import { state } from "../core/state.js";
+import { t } from "../core/i18n.js";
 import { classify, humanizeCode, isHiddenRecord, isTimedRun, locationKey } from "../data/classification.js";
-import { instanceKey, isCharacterDeath, isOnOrAfterStartDate, msBetween, parseTime } from "../core/utils.js";
+import {
+  instanceKey,
+  isCharacterDeath,
+  isOnOrAfterStartDate,
+  msBetween,
+  parseTime,
+  escapeRegex
+} from "../core/utils.js";
 
 export function parseLines(lines, options) {
   if (options.reset) {
     state.records = [];
     state.pending = null;
     state.deaths = [];
+  }
+
+  function recordBossLine(line, bossName, uniqPattern) {
+    const match = line.match(
+      new RegExp(`^(\\d{4}/\\d{2}/\\d{2} \\d{2}:\\d{2}:\\d{2}).*${escapeRegex(uniqPattern)}`, "i")
+    );
+    if (match) {
+      state.records.push({
+        id: `scene:${match[1]}:${bossName}`,
+        time: parseTime(match[1]),
+        type: "boss",
+        name: bossName
+      });
+    }
+  }
+
+  function recordBosses(line) {
+    recordBossLine(line, t("trialMaster.name"), t("trialMaster.message"));
+    recordBossLine(line, t("raven.name"), t("raven.message"));
   }
 
   for (const line of lines) {
@@ -61,6 +88,8 @@ export function parseLines(lines, options) {
       }
       continue;
     }
+
+    recordBosses(line);
 
     const loading = line.match(
       /^(\d{4}\/\d{2}\/\d{2} \d{2}:\d{2}:\d{2}).*\[LOADING SCREEN\] \((.+)\) Duration = ([\d.]+)/
