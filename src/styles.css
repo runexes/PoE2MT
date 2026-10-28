@@ -779,6 +779,10 @@ td small {
     padding: 14px;
     flex-direction: column;
   }
+
+  .overlay-cont {
+    flex-direction: column;
+  }
 }
 
 .topbar-actions {
@@ -932,7 +936,7 @@ td small {
 .overlay-template {
   display: block;
   width: 100%;
-  min-height: 120px;
+  min-height: 75px;
   padding: 12px;
   resize: vertical;
   color: var(--text);
@@ -997,8 +1001,13 @@ td small {
   border-color: var(--danger);
 }
 
+.overlay-cont {
+  display: flex;
+  gap: 10px;
+}
+
 .overlay-preview {
-  margin: 10px 0 0;
+  margin: 0;
   padding: 10px;
   color: var(--text);
   background: var(--bg);
@@ -1008,4 +1017,5 @@ td small {
   line-height: 1.6;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
+  min-width: 35%;
 }

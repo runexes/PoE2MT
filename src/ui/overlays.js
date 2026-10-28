@@ -62,6 +62,7 @@ export function renderOverlayList() {
     card.className = "overlay-card";
     card.dataset.index = String(index);
     card.innerHTML = [
+      '<p class="overlay-id-note" hidden></p>',
       '<div class="overlay-card-head">',
       '<label class="field"><span>ID</span>',
       `<input class="overlay-id" type="text" value="${escapeHtml(
@@ -74,29 +75,15 @@ export function renderOverlayList() {
         escapeHtml(t("overlay.remove")) +
         '">X</button>',
       "</div>",
-      '<p class="overlay-id-note" hidden></p>',
-      `<textarea class="overlay-template" rows="5" spellcheck="false" aria-label="${escapeHtml(
+      '<div class="overlay-cont">',
+      `<textarea class="overlay-template" rows="2" spellcheck="false" aria-label="${escapeHtml(
         t("overlay.templateLabel")
       )}">${escapeHtml(overlay.template)}</textarea>`,
-      renderOverlayTarget(overlay.id),
-      `<pre class="overlay-preview">${escapeHtml(overlay.rendered)}</pre>`
+      `<pre class="overlay-preview">${escapeHtml(overlay.rendered)}</pre>`,
+      "</div>"
     ].join("");
     els.overlayList.appendChild(card);
   });
-}
-
-function renderOverlayTarget(overlayId) {
-  const source = `<span class="overlay-source" title="${escapeHtml(t("obs.help"))}">${escapeHtml(
-    t("obs.sourceName")
-  )}: ${escapeHtml(overlayId)}</span>`;
-  if (!window.statsServer) return source;
-  const url = overlayUrl(overlayId);
-  return [
-    `<button class="overlay-url" type="button" data-url="${escapeHtml(
-      url
-    )}" title="${escapeHtml(t("overlay.copyLink"))}">${escapeHtml(url)}</button>`,
-    source
-  ].join("");
 }
 
 export function addOverlay() {
