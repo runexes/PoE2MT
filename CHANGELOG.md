@@ -8,6 +8,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 This project is a fork of [PoE2MT](https://github.com/igodspy/PoE2MT) by igodspy.
 Entries below cover changes made in this fork; the original project history is kept in its own repository.
 
+## [0.2.3] - 2026-10-29
+
+### Added
+
+- Boss records expanded: Architect, Atziri and Zarokh (Vaal Temple / Trial of Sekhem) are now recorded as boss records, with localized names and multi-line defeat messages.
+- Russian location data: added Russian names and bosses for several Expedition, Delirium, Ritual and Trial locations.
+
+### Changed
+
+- Overlay card layout reworked: template and preview placed side by side, template min height reduced.
+- Boss message matching now supports multiple alternative defeat lines per boss.
+
 ## [0.2.2] - 2026-10-28
 
 ### Added
@@ -80,6 +92,7 @@ First release of the Electron desktop fork.
 
 - Browser and `file://` usage; the app now requires Electron.
 
+[0.2.3]: https://github.com/runexes/PoE2MT/releases/tag/v0.2.3
 [0.2.2]: https://github.com/runexes/PoE2MT/releases/tag/v0.2.2
 [0.2.1]: https://github.com/runexes/PoE2MT/releases/tag/v0.2.1
 [0.2.0]: https://github.com/runexes/PoE2MT/releases/tag/v0.2.0
