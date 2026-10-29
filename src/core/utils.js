@@ -21,7 +21,7 @@ export function normalizeCodeName(value) {
   return String(value || "")
     .replace(/^Map/i, "")
     .replace(/^The\s+/i, "")
-    .replace(/[^a-z0-9]+/gi, "")
+    .replace(/[^a-z0-9а-яё]+/gi, "")
     .toLowerCase();
 }
 
@@ -40,7 +40,7 @@ export function escapeHtml(value) {
 }
 
 export function escapeRegex(value) {
-  return String(value || "").replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return String(value || "").replace(/[.*+?^${}()[\]\\]/g, "\\$&");
 }
 
 export function parseTime(value) {

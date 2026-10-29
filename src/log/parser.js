@@ -19,13 +19,12 @@ export function parseLines(lines, options) {
 
   function recordBossLine(line, bossName, uniqPattern) {
     const match = line.match(
-      new RegExp(`^(\\d{4}/\\d{2}/\\d{2} \\d{2}:\\d{2}:\\d{2}).*${escapeRegex(uniqPattern)}`, "i")
+      new RegExp(`^(\\d{4}/\\d{2}/\\d{2} \\d{2}:\\d{2}:\\d{2}).*(?:${escapeRegex(uniqPattern)})`, "i")
     );
     if (match) {
-      state.records.push({
+      pushRecord({
         id: `scene:${match[1]}:${bossName}`,
         time: parseTime(match[1]),
-        type: "boss",
         name: bossName
       });
     }
