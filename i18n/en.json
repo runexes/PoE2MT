@@ -152,5 +152,11 @@
   "trialMaster.message": "my service is finally over",
   "raven.name": "The Raven",
   "raven.message": "Stupid rat! What have you done? Get out!",
-  "topbar.changelog": "Changelog"
+  "topbar.changelog": "Changelog",
+  "architect.name": "Architect",
+  "architect.message": "In... con... ceivable|What... I miscalculated...|This... is not... right!",
+  "atziri.name": "Atziri",
+  "atziri.message": "Take me pochiti! I am yours! Give me eternity!",
+  "zarokh.name": "Zarokh",
+  "zarokh.message": "Ugh... who are you to overthrow your fate|Ugh, this is not the future I had forseen|This cannot be... it is not my time...|My sand... runs out...|The sands shift, Taljari|You would have made a worthy"
 }

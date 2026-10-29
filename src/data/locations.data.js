@@ -152,6 +152,9 @@ export const POE2_LOCATION_DATA = {
     ["Суть небытия", "boss", "Ritual", "Хозяин в Туманах"],
     ["Мастер испытаний", "boss", "Trial", "Храм хаоса"],
     ["Ворон", "boss", "Delirium", "Увядшая ива"],
+    ["Архитектор", "boss", "Vaal", "Храм ваал"],
+    ["Атзири", "boss", "Vaal", "Храм ваал"],
+    ["Зарок", "boss", "Trial", "Испытание Сехем"]
   ],
   internalHints: [
     ["Hideout", "hideout"],

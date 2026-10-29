@@ -33,6 +33,9 @@ export function parseLines(lines, options) {
   function recordBosses(line) {
     recordBossLine(line, t("trialMaster.name"), t("trialMaster.message"));
     recordBossLine(line, t("raven.name"), t("raven.message"));
+    recordBossLine(line, t("architect.name"), t("architect.message"));
+    recordBossLine(line, t("atziri.name"), t("atziri.message"));
+    recordBossLine(line, t("zarokh.name"), t("zarokh.message"));
   }
 
   for (const line of lines) {
