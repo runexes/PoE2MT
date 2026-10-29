@@ -143,7 +143,15 @@ export const POE2_LOCATION_DATA = {
     ["Ruins of Kingsmarch", "boss", "Expedition", "The Aberration"],
     ["Verisium Crater", "boss", "Expedition", "The Aberration"],
     ["The Withered Willow", "boss", "Delirium", "Tangmazu, The Raven Trickster"],
-    ["Atlas", "town", "", "Atlas UI"]
+    ["Atlas", "town", "", "Atlas UI"],
+    ["Уединённый храм", "boss", "Expedition", "Утред, Пьющий звёзды"],
+    ["Скорбный утёс", "boss", "Expedition", "Ворана, Стоящая до конца"],
+    ["Развалины Кингсмарша", "boss", "Expedition", "Отродье"],
+    ["Разросшиеся джунгли", "boss", "Expedition", "Медведь, павший провидец"],
+    ["Неясный остров", "boss", "Expedition", "Олрот, Исток падения"],
+    ["Суть небытия", "boss", "Ritual", "Хозяин в Туманах"],
+    ["Мастер испытаний", "boss", "Trial", "Храм хаоса"],
+    ["Ворон", "boss", "Delirium", "Увядшая ива"],
   ],
   internalHints: [
     ["Hideout", "hideout"],
